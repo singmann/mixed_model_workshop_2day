@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Statistical Modeling in R</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Henrik Singmann (University of Zurich) Twitter: @HenrikSingmann" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Statistical Modeling in R
+## The Basics
+### Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
+### July 2018
+
+---
+
+
+
+
+
+
+
+class: inline-grey
+# Summary: Analysis with Statistical Models in R
+
+1. Identify probability distribution of data (more correct: of residuals/conditional distribution)
+2. Make sure variables are of correct type via `str()` or `tibble::glimpse()`
+3. Set appropriate contrasts (orthogonal contrasts if model includes interaction): `afex::set_sum_contrasts()`
+4. Describe statistical model using `formula`
+4. Fit model: pass `formula` and `data.frame` to corresponding modeling function (e.g., `lm()`, `glm()`)
+4. Check model fit (e.g., inspect residuals)
+5. Test terms (i.e., main effects and interactions): Pass fitted model to `car::Anova()`
+7. Follow-up tests: 
+   - Estimated marginal means: Pass fitted model to `emmeans::emmeans()` (formerly:`lsmeans::lsmeans()`)
+   - Specify specific contrasts on estimated marginal means (e.g., `contrast()`, `pairs()`)
+
+`afex` combines fitting (5.) and testing (7.):
+- ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
+- (Generalized) linear mixed-effects models: `afex::mixed()`
+
+---
+
+# Overview: Part I
+
+- Statistical Modeling with `lm` (no mixed-model)
+    - Model setup and model formulas
+    - Continuous versus categorical covariates 
+    - `model.matrix()` and factor codings.
+    - Categorical covariates and interactions
+
+
+- Tests of Model Terms/Effects with `car::Anova()`
+- Follow-up Tests with `emmeans`
+
+
+- ANOVAs with `afex`
+
+
+- Problem with Repeated-Measures: IID assumption
+  - Solution: Different ways of *pooling*
+  - Pooling: worked examples 
+
+---
+
+# Statistical Model
+
+From [Wikipedia](https://en.wikipedia.org/wiki/Statistical_model) (emphasis added):
+
+&gt; A statistical model is a class of mathematical model, which embodies a set of assumptions concerning the generation of some sample data, and similar data from a larger population. A statistical model represents, often in considerably idealized form, the **data-generating process**.
+
+&gt; The assumptions embodied by a statistical model describe a set of **probability distributions**, some of which are assumed to adequately approximate the distribution from which a particular data set is sampled. The probability distributions inherent in statistical models are what distinguishes statistical models from other, non-statistical, mathematical models.
+
+&gt; A statistical model is usually specified by mathematical equations that relate one or more random variables and possibly other non-random variables. As such, "a model is a formal representation of a theory" (Herman Ader quoting Kenneth Bollen).
+
+&gt; All statistical hypothesis tests and all statistical estimators are derived from statistical models. More generally, statistical models are part of the foundation of statistical inference.
+
+---
+class: small
+
+# Some Example Data
+
+Data from Revelle, Wilt and Rosenthal (2009). `?sat.act`:
+&gt; Items were collected as part of the SAPA project (http://sapa-project.org) to develop online measures of ability (Revelle, Wilt and Rosenthal, 2009). The score means are higher than national norms suggesting both self selection for people taking on line personality and ability tests and a self reporting bias in scores.
+
+
+```r
+require(psych)
+data(sat.act)
+sat.act$gender &lt;- factor(sat.act$gender, 1:2, labels = c("male", "female"))
+sat.act$education &lt;- factor(sat.act$education)
+summary(sat.act) # alternatively: psych::describe(sat.act)
+```
+
+```
+##     gender    education      age            ACT            SATV          SATQ    
+##  male  :247   0: 57     Min.   :13.0   Min.   : 3.0   Min.   :200   Min.   :200  
+##  female:453   1: 45     1st Qu.:19.0   1st Qu.:25.0   1st Qu.:550   1st Qu.:530  
+##               2: 44     Median :22.0   Median :29.0   Median :620   Median :620  
+##               3:275     Mean   :25.6   Mean   :28.6   Mean   :612   Mean   :610  
+##               4:138     3rd Qu.:29.0   3rd Qu.:32.0   3rd Qu.:700   3rd Qu.:700  
+##               5:141     Max.   :65.0   Max.   :36.0   Max.   :800   Max.   :800  
+##                                                                     NA's   :13
+```
+
+```r
+sat.act &lt;- na.omit(sat.act)
+```
+
+---
+# Some Example Data
+
+
+
+```r
+par(mfrow=c(1,2))
+plot(sat.act$SATV, sat.act$ACT)
+plot(sat.act$SATQ, sat.act$ACT)
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-2-1.svg)&lt;!-- --&gt;
+
+.pull-left[
+
+]
+
+.pull-right[
+
+]
+
+---
+# Linear Regression Model
+
+- `\(\bf{y}\)` = vector of ACT scores of length `\(n\)` (*dependent variable*)
+- `\(\bf{x_{\mbox{SATV}}}\)` = vector of SATV scores of length `\(n\)` (*independent variable* or *covariate*)
+
+`$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATV}}x_{\mbox{SATV},i}+\epsilon_i, \ \ i = 1, ..., n, \\
+\bf{\epsilon} \sim \mathcal{N}(0, \sigma^2_{\epsilon}),$$`
+where `\(\bf{x_0}\)` is a vector of 1s of length `\(n\)`.
+
+- Errors `\(\bf{\epsilon}\)` are assumed to come from a normal distribution (i.e., uncorrelated).
+
+- `\(\beta_0\)` and  `\(\beta_{\mbox{SATV}}\)` are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( `\(\sigma^2_{\epsilon}\)` is also a parameter). `\(\beta_0\)` is also known as the *intercept*.
+
+******
+
+In matrix form this model can be expressed as:
+`$$\bf{y} = \bf{X}\bf{\beta}+\bf{\epsilon}$$`
+
+---
+class: small
+
+# Linear Model in R
+
+.pull-left2[
+
+```r
+m1 &lt;- lm(ACT ~ SATQ, sat.act)
+summary(m1)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ SATQ, data = sat.act)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -20.394  -2.573   0.267   2.267  16.511 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 13.58325    0.80249    16.9   &lt;2e-16 ***
+## SATQ         0.02453    0.00129    19.0   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.91 on 685 degrees of freedom
+## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
+## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+```
+
+]
+.pull-right2[
+
+```r
+coef(m1)
+```
+
+```
+## (Intercept)        SATQ 
+##    13.58325     0.02453
+```
+
+
+```r
+plot(sat.act$SATQ, sat.act$ACT)
+abline(m1)
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-7-1.svg)&lt;!-- --&gt;
+]
+---
+class: small
+
+# Linear Model in R (Centered)
+
+.pull-left2[
+
+```r
+sat.act$SATQ_c &lt;- sat.act$SATQ - mean(sat.act$SATQ)
+sat.act$SATV_c &lt;- sat.act$SATV - mean(sat.act$SATV)
+m2 &lt;- lm(ACT ~ SATQ_c, sat.act)
+summary(m2)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ SATQ_c, data = sat.act)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -20.394  -2.573   0.267   2.267  16.511 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 28.55022    0.14931     191   &lt;2e-16 ***
+## SATQ_c       0.02453    0.00129      19   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.91 on 685 degrees of freedom
+## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
+## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+```
+
+]
+.pull-right2[
+
+```r
+coef(m2)
+```
+
+```
+## (Intercept)      SATQ_c 
+##    28.55022     0.02453
+```
+
+
+```r
+plot(sat.act$SATQ_c, sat.act$ACT)
+abline(m2)
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-10-1.svg)&lt;!-- --&gt;
+]
+---
+
+class: inline-grey
+# Formula Interface for Statistical Models: `~`
+
+Allows symbolic specification of statistical model, e.g. linear models: `lm(ACT ~ SATQ, sat.act)`
+
+Everything to the left of `~` is the dependent variable:
+```r
+y ~ x # univariate model
+cbind(y1, y2, y3) ~ x # multivariate model
+~ x # one sided formula
+```
+
+Independent variables are to the right of the `~`:
+
+| Formula | &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; | Interpretation  |
+| ------------------------|---|----------------------------------|
+| `~ x` or `~1+x`         || Intercept and main effect of `x` | 
+| ` ~ x-1` or `~0 + x`    || Only main effect of `x` and no intercept (questionable) |
+| `~ x+y`                 || Main effects of `x` and `y`|
+| `~ x:y`                 || Interaction between `x` and `y` (and no main effect) |
+| `~ x*y` or `~ x+y+x:y`  || Main effects and interaction between `x` and `y` |
+
+---
+class: small
+
+# How many Parameters in each Model?
+
+
+```r
+lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
+lm(ACT ~ SATQ_c : SATV_c, sat.act)   # b
+lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act) # c
+lm(ACT ~ SATQ_c*SATV_c, sat.act)     # d
+lm(ACT ~ 0+SATQ_c*SATV_c, sat.act)   # e
+```
+
+--
+.pull-left[
+
+```r
+coef(lm(ACT ~ SATQ_c + SATV_c, sat.act))   # a
+```
+
+```
+## (Intercept)      SATQ_c      SATV_c 
+##    28.55022     0.01614     0.01328
+```
+
+```r
+coef(lm(ACT ~ SATQ_c : SATV_c, sat.act))   # b
+```
+
+```
+##   (Intercept) SATQ_c:SATV_c 
+##     2.895e+01    -4.757e-05
+```
+
+```r
+coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
+```
+
+```
+## SATQ_c:SATV_c 
+##     0.0006005
+```
+
+
+]
+
+.pull-right[
+
+```r
+coef(lm(ACT ~ SATQ_c*SATV_c, sat.act))     # d
+```
+
+```
+##   (Intercept)        SATQ_c        SATV_c SATQ_c:SATV_c 
+##     2.832e+01     1.701e-02     1.432e-02     2.780e-05
+```
+
+```r
+coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
+```
+
+```
+##        SATQ_c        SATV_c SATQ_c:SATV_c 
+##     0.0397598     0.0416544     0.0007596
+```
+
+]
+
+
+
+
+---
+class: center, middle, inverse
+
+# Categorical Covariates
+
+---
+class: small
+# Categorical Covariates
+
+`R` modeling functions behave differently for numerical and categorical covariates. 
+
+It is important to always know of what type variables are. Use `str()` on a `data.frame` (or `glimpse()` after loading the `tidyverse`) to obtain information regarding the structure, including variable types: 
+
+
+```r
+str(sat.act) ## alternatively tibble::glimpse(sat.act)
+```
+
+```
+## 'data.frame':	687 obs. of  8 variables:
+##  $ gender   : Factor w/ 2 levels "male","female": 2 2 2 1 1 1 2 1 2 2 ...
+##  $ education: Factor w/ 6 levels "0","1","2","3",..: 4 4 4 5 3 6 6 4 5 6 ...
+##  $ age      : int  19 23 20 27 33 26 30 19 23 40 ...
+##  $ ACT      : int  24 35 21 26 31 28 36 22 22 35 ...
+##  $ SATV     : int  500 600 480 550 600 640 610 520 400 730 ...
+##  $ SATQ     : int  500 500 470 520 550 640 500 560 600 800 ...
+##  $ SATQ_c   : num  -110.2 -110.2 -140.2 -90.2 -60.2 ...
+##  $ SATV_c   : num  -112.3 -12.3 -132.3 -62.3 -12.3 ...
+##  - attr(*, "na.action")= 'omit' Named int  130 197 248 364 376 419 498 515 523 581 ...
+##   ..- attr(*, "names")= chr  "31294" "32448" "33259" "35106" ...
+```
+
+- Numerical covariates are `int` or `num`.
+- Categorical covariates are `Factor` (or `character`).
+
+**Make sure all categorical variables are factors before adding them to a statistical model!**
+
+---
+class: small
+
+# Models with Categorical Covariates
+
+We might be interested in testing whether ACT differs between men and women. 
+.pull-left2[
+
+```r
+m3 &lt;- lm(ACT ~ gender, sat.act)
+summary(m3)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ gender, data = sat.act)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -25.8   -3.4    0.6    3.6    7.6 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)    28.820      0.309   93.39   &lt;2e-16 ***
+## genderfemale   -0.420      0.385   -1.09     0.28    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.83 on 685 degrees of freedom
+## Multiple R-squared:  0.00174,	Adjusted R-squared:  0.000279 
+## F-statistic: 1.19 on 1 and 685 DF,  p-value: 0.275
+```
+
+]
+--
+
+
+
+.pull-right2[
+
+```r
+mean(sat.act$ACT)
+```
+
+```
+## [1] 28.55
+```
+
+```r
+sat.act %&gt;% group_by(gender) %&gt;%
+  summarise(m = mean(ACT))
+```
+
+```
+## # A tibble: 2 x 2
+##   gender     m
+##   &lt;fct&gt;  &lt;dbl&gt;
+## 1 male    28.8
+## 2 female  28.4
+```
+
+
+```r
+sat.act %&gt;% group_by(gender) %&gt;%
+  summarise(m = mean(ACT)) %&gt;%
+  {.$m[2] - .$m[1]}
+```
+
+```
+## [1] -0.42
+```
+]
+
+
+
+---
+class: small
+
+# R and Categorical Covariates
+`model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+
+.pull-left[
+
+```r
+model.matrix(ACT ~ gender, sat.act[1:5,])
+```
+
+```
+##       (Intercept) genderfemale
+## 29442           1            1
+## 29457           1            1
+## 29498           1            1
+## 29503           1            0
+## 29504           1            0
+## attr(,"assign")
+## [1] 0 1
+## attr(,"contrasts")
+## attr(,"contrasts")$gender
+## [1] "contr.treatment"
+```
+]
+
+---
+class: small
+# R and Categorical Covariates
+
+`model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+
+.pull-left[
+
+```r
+model.matrix(ACT ~ gender, sat.act[1:5,])
+```
+
+```
+##       (Intercept) genderfemale
+## 29442           1            1
+## 29457           1            1
+## 29498           1            1
+## 29503           1            0
+## 29504           1            0
+## attr(,"assign")
+## [1] 0 1
+## attr(,"contrasts")
+## attr(,"contrasts")$gender
+## [1] "contr.treatment"
+```
+
+
+```r
+afex::set_sum_contrasts()
+```
+
+```
+## setting contr.sum globally: options(contrasts=c('contr.sum', 'contr.poly'))
+```
+
+]
+
+.pull-right[
+
+```r
+model.matrix(ACT ~ gender, sat.act[1:5,])
+```
+
+```
+##       (Intercept) gender1
+## 29442           1      -1
+## 29457           1      -1
+## 29498           1      -1
+## 29503           1       1
+## 29504           1       1
+## attr(,"assign")
+## [1] 0 1
+## attr(,"contrasts")
+## attr(,"contrasts")$gender
+## [1] "contr.sum"
+```
+]
+
+---
+class: small
+
+# Models with Categorical Covariates II 
+
+Same model as before, but with sum/effects contrasts.
+
+.pull-left2[
+
+```r
+m4 &lt;- lm(ACT ~ gender, sat.act)
+summary(m4)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ gender, data = sat.act)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -25.8   -3.4    0.6    3.6    7.6 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   28.610      0.192  148.73   &lt;2e-16 ***
+## gender1        0.210      0.192    1.09     0.28    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.83 on 685 degrees of freedom
+## Multiple R-squared:  0.00174,	Adjusted R-squared:  0.000279 
+## F-statistic: 1.19 on 1 and 685 DF,  p-value: 0.275
+```
+
+]
+
+
+
+.pull-right2[
+
+```r
+mean(sat.act$ACT)
+```
+
+```
+## [1] 28.55
+```
+
+```r
+sat.act %&gt;% group_by(gender) %&gt;%
+  summarise(m = mean(ACT))
+```
+
+```
+## # A tibble: 2 x 2
+##   gender     m
+##   &lt;fct&gt;  &lt;dbl&gt;
+## 1 male    28.8
+## 2 female  28.4
+```
+
+```r
+sat.act %&gt;% group_by(gender) %&gt;%
+  summarise(m = mean(ACT)) %&gt;% 
+  summarise(mean(m))
+```
+
+```
+## # A tibble: 1 x 1
+##   `mean(m)`
+##       &lt;dbl&gt;
+## 1      28.6
+```
+
+]
+
+
+
+---
+class: small
+# Models with Categorical Covariates and Interactions
+
+
+```r
+afex::set_default_contrasts() # or set_treatment_contrasts()
+```
+
+```
+## setting contr.treatment globally: options(contrasts=c('contr.treatment', 'contr.poly'))
+```
+
+
+
+
+.pull-left2[
+
+```r
+m5 &lt;- lm(ACT ~ gender*education, sat.act)
+coef(m5)
+```
+
+```
+##             (Intercept)            genderfemale 
+##                29.03704                -2.96807 
+##              education1              education2 
+##                -2.45809                -2.38486 
+##              education3              education4 
+##                -0.36615                -0.09586 
+##              education5 genderfemale:education1 
+##                 1.78905                 4.22246 
+## genderfemale:education2 genderfemale:education3 
+##                 3.51590                 2.46034 
+## genderfemale:education4 genderfemale:education5 
+##                 3.39899                 1.26026
+```
+
+]
+
+.pull-right2[
+
+```r
+sat.act %&gt;% 
+  group_by(gender,education) %&gt;%
+  summarise(mean(ACT))
+```
+
+```
+## # A tibble: 12 x 3
+## # Groups:   gender [?]
+##    gender education `mean(ACT)`
+##    &lt;fct&gt;  &lt;fct&gt;           &lt;dbl&gt;
+##  1 male   0                29.0
+##  2 male   1                26.6
+##  3 male   2                26.7
+##  4 male   3                28.7
+##  5 male   4                28.9
+##  6 male   5                30.8
+##  7 female 0                26.1
+##  8 female 1                27.8
+##  9 female 2                27.2
+## 10 female 3                28.2
+## 11 female 4                29.4
+## 12 female 5                29.1
+```
+]
+
+
+
+---
+class: small
+# Models with Categorical Covariates and Interactions II
+
+
+```r
+afex::set_sum_contrasts() # or set_effects_contrasts() or set_deviation_contrasts()
+```
+
+```
+## setting contr.sum globally: options(contrasts=c('contr.sum', 'contr.poly'))
+```
+
+
+
+
+.pull-left2[
+
+```r
+m6 &lt;- lm(ACT ~ gender*education, sat.act)
+coef(m6)
+```
+
+```
+##        (Intercept)            gender1         education1 
+##          28.205178           0.245873          -0.652177 
+##         education2         education3         education4 
+##          -0.999038          -1.279091           0.211844 
+##         education5 gender1:education1 gender1:education2 
+##           0.951457           1.238163          -0.873066 
+## gender1:education3 gender1:education4 gender1:education5 
+##          -0.519786           0.007991          -0.461331
+```
+
+]
+
+.pull-right2[
+
+```r
+sat.act %&gt;% 
+  group_by(gender,education) %&gt;%
+  summarise(m = mean(ACT)) %&gt;% 
+  ungroup() %&gt;% 
+  summarise(mean(m))
+```
+
+```
+## # A tibble: 1 x 1
+##   `mean(m)`
+##       &lt;dbl&gt;
+## 1      28.2
+```
+]
+
+
+
+---
+# Categorical Covariates and Model Matrices
+
+.pull-left3[
+
+```r
+lm(ACT ~ SATQ + SATV, sat.act)   # a: 3
+lm(ACT ~ SATQ : SATV, sat.act)   # b: 2
+lm(ACT ~ 0 + SATQ:SATV, sat.act) # c: 1
+lm(ACT ~ SATQ*SATV, sat.act)     # d: 4
+lm(ACT ~ 0+SATQ*SATV, sat.act)   # e: 3
+
+lm(ACT ~ SATQ, sat.act)          # f: 2
+lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
+```
+
+]
+
+--
+.pull-right3[
+
+```r
+lm(ACT ~ gender, sat.act)                  # a
+lm(ACT ~ 0+gender, sat.act)                # b
+lm(ACT ~ gender+education, sat.act)        # c
+lm(ACT ~ 0+gender+education, sat.act)      # d
+lm(ACT ~ gender:education, sat.act)        # e
+lm(ACT ~ 0+gender:education, sat.act)      # f
+lm(ACT ~ gender*education, sat.act)        # g
+lm(ACT ~ 0+gender*education, sat.act)      # h
+lm(ACT ~ gender+gender:education, sat.act) # i
+```
+
+
+```r
+levels(sat.act$gender)
+```
+
+```
+## [1] "male"   "female"
+```
+
+```r
+levels(sat.act$education)
+```
+
+```
+## [1] "0" "1" "2" "3" "4" "5"
+```
+
+
+]
+
+
+---
+class: small
+
+# Beware of Formulas with Categorical Variables
+
+
+
+```r
+coef(lm(ACT ~ gender, sat.act))                  # a: 2
+```
+
+```
+## (Intercept)     gender1 
+##       28.61        0.21
+```
+
+```r
+coef(lm(ACT ~ 0+gender, sat.act))                # b: 2
+```
+
+```
+##   gendermale genderfemale 
+##        28.82        28.40
+```
+
+```r
+coef(lm(ACT ~ gender+education, sat.act))        # c: 7
+```
+
+```
+## (Intercept)     gender1  education1  education2  education3  education4  education5 
+##     28.2016      0.2906     -0.6912     -0.8888     -1.3149      0.2306      1.0843
+```
+
+```r
+coef(lm(ACT ~ 0+gender+education, sat.act))      # d: 7
+```
+
+```
+##   gendermale genderfemale   education1   education2   education3   education4   education5 
+##      28.4922      27.9110      -0.6912      -0.8888      -1.3149       0.2306       1.0843
+```
+
+---
+class: small
+
+
+
+```r
+coef(lm(ACT ~ gender:education, sat.act))        # e: 13
+```
+
+```
+##             (Intercept)   gendermale:education0 genderfemale:education0   gendermale:education1 
+##                29.11828                -0.08124                -3.04931                -2.53933 
+## genderfemale:education1   gendermale:education2 genderfemale:education2   gendermale:education3 
+##                -1.28495                -2.46611                -1.91828                -0.44739 
+## genderfemale:education3   gendermale:education4 genderfemale:education4   gendermale:education5 
+##                -0.95512                -0.17710                 0.25381                 1.70781 
+## genderfemale:education5 
+##                      NA
+```
+
+```r
+coef(lm(ACT ~ 0+gender:education, sat.act))      # f: 12
+```
+
+```
+##   gendermale:education0 genderfemale:education0   gendermale:education1 genderfemale:education1 
+##                   29.04                   26.07                   26.58                   27.83 
+##   gendermale:education2 genderfemale:education2   gendermale:education3 genderfemale:education3 
+##                   26.65                   27.20                   28.67                   28.16 
+##   gendermale:education4 genderfemale:education4   gendermale:education5 genderfemale:education5 
+##                   28.94                   29.37                   30.83                   29.12
+```
+
+
+```r
+coef(lm(ACT ~ gender*education, sat.act))        # g: 12
+coef(lm(ACT ~ 0+gender*education, sat.act))      # h: 12
+coef(lm(ACT ~ gender+gender:education, sat.act)) # i: 12
+```
+
+
+
+---
+class: inline-grey
+# Interim Summary
+
+- The `R` `formula` interface allows symbolic specification of statistical models.
+  - `+` = main effects
+  - `:` = interaction
+  - `*` = main effects plus interaction
+  - `0+`/`-1` = no intercept
+
+
+- Categorical variables are transformed into numerical variables using contrast functions (via `model.matrix()`; see Cohen et al., 2002)
+  - If models include interactions, orthogonal contrasts (e.g., `contr.sum`) in which the intercept corresponds to the (unweighted) grand mean should be used: `afex::set_sum_contrasts()`
+  - Dummy/treatment contrasts (`R` default) lead to simple effects for lower order effects.
+  - **Coding only affects interpretation of parameters/tests not overall model fit.**
+
+
+- For models with solely numerical independent variables, suppressing intercept works as expected.
+- For models with categorical independent variables, suppressing intercept or other lower-order effects often leads to very surprising results (and should generally be avoided).
+
+---
+class: center, middle, inverse
+
+# Tests of Terms/Effects
+
+---
+class: small
+
+
+
+.pull-left2[
+
+```r
+afex::set_sum_contrasts()
+m6 &lt;- lm(ACT ~ gender*education, sat.act)
+summary(m6)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ gender * education, data = sat.act)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -23.652  -3.118   0.329   3.837   9.931 
+## 
+## Coefficients:
+##                    Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)        28.20518    0.23133  121.93   &lt;2e-16 ***
+## gender1             0.24587    0.23133    1.06    0.288    
+## education1         -0.65218    0.56826   -1.15    0.252    
+## education2         -0.99904    0.63931   -1.56    0.119    
+## education3         -1.27909    0.63689   -2.01    0.045 *  
+## education4          0.21184    0.34788    0.61    0.543    
+## education5          0.95146    0.41373    2.30    0.022 *  
+## gender1:education1  1.23816    0.56826    2.18    0.030 *  
+## gender1:education2 -0.87307    0.63931   -1.37    0.173    
+## gender1:education3 -0.51979    0.63689   -0.82    0.415    
+## gender1:education4  0.00799    0.34788    0.02    0.982    
+## gender1:education5 -0.46133    0.41373   -1.12    0.265    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.75 on 675 degrees of freedom
+## Multiple R-squared:  0.0471,	Adjusted R-squared:  0.0316 
+## F-statistic: 3.03 on 11 and 675 DF,  p-value: 0.00057
+```
+
+]
+
+.pull-right2[
+
+```r
+sat.act %&gt;% 
+  group_by(gender, education) %&gt;%
+  summarise(m = mean(ACT)) %&gt;% 
+  ungroup() %&gt;% 
+  summarise(mean(m))
+```
+
+```
+## # A tibble: 1 x 1
+##   `mean(m)`
+##       &lt;dbl&gt;
+## 1      28.2
+```
+]
+
+
+
+---
+
+# `car::Anova()` is the Solution
+
+
+```r
+require(car) # Companion to Applied Regression (Fox &amp; Weisberg, 2011)
+Anova(m6, type = 3)
+```
+
+```
+## Anova Table (Type III tests)
+## 
+## Response: ACT
+##                  Sum Sq  Df  F value  Pr(&gt;F)    
+## (Intercept)      335997   1 14866.33 &lt; 2e-16 ***
+## gender               26   1     1.13 0.28822    
+## education           542   5     4.80 0.00026 ***
+## gender:education    201   5     1.78 0.11466    
+## Residuals         15256 675                     
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+--
+
+- Type II and III tests equivalent for balanced designs (i.e., equal group sizes) and highest-order effect.
+- Type III tests require orthogonal contrasts (e.g.,`contr.sum`); recommended:
+  - For experimental designs in which imbalance is completely random and not structural,
+  - Complete cross-over interactions (i.e., main effects in presence of interaction) possible.
+- Type II are more appropriate if imbalance is structural (i.e., observational data; maybe here).
+
+---
+class: small, inline-grey
+
+# `emmeans` for Follow-Up/Post-Hoc Tests I
+
+.pull-left[
+
+```r
+library("emmeans")    
+(emms &lt;- emmeans(m6, ~education))
+```
+
+```
+##  education emmean     SE  df lower.CL upper.CL
+##  0          27.55 0.6357 675    26.30    28.80
+##  1          27.21 0.7299 675    25.77    28.64
+##  2          26.93 0.7268 675    25.50    28.35
+##  3          28.42 0.3182 675    27.79    29.04
+##  4          29.16 0.4201 675    28.33    29.98
+##  5          29.97 0.4285 675    29.13    30.81
+## 
+## Results are averaged over the levels of: gender 
+## Confidence level used: 0.95
+```
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+
+One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
+
+]
+--
+.pull-right[
+
+```r
+pairs(emms, adjust='holm')
+```
+
+```
+##  contrast estimate     SE  df t.ratio p.value
+##  0 - 1      0.3469 0.9679 675   0.358  1.0000
+##  0 - 2      0.6269 0.9656 675   0.649  1.0000
+##  0 - 3     -0.8640 0.7109 675  -1.215  0.9658
+##  0 - 4     -1.6036 0.7620 675  -2.105  0.3213
+##  0 - 5     -2.4192 0.7666 675  -3.156  0.0217
+##  1 - 2      0.2801 1.0300 675   0.272  1.0000
+##  1 - 3     -1.2109 0.7963 675  -1.521  0.9017
+##  1 - 4     -1.9505 0.8422 675  -2.316  0.2086
+##  1 - 5     -2.7660 0.8464 675  -3.268  0.0159
+##  2 - 3     -1.4909 0.7934 675  -1.879  0.4851
+##  2 - 4     -2.2305 0.8394 675  -2.657  0.0887
+##  2 - 5     -3.0461 0.8437 675  -3.611  0.0049
+##  3 - 4     -0.7396 0.5270 675  -1.403  0.9658
+##  3 - 5     -1.5552 0.5337 675  -2.914  0.0443
+##  4 - 5     -0.8155 0.6001 675  -1.359  0.9658
+## 
+## Results are averaged over the levels of: gender 
+## P value adjustment: holm method for 15 tests
+```
+]
+
+---
+class: small, inline-grey
+
+# `emmeans` for Follow-Up/Post-Hoc Tests II
+
+.pull-left[
+
+```r
+library("emmeans")  
+(emms &lt;- emmeans(m6, "education")) 
+```
+
+```
+##  education emmean     SE  df lower.CL upper.CL
+##  0          27.55 0.6357 675    26.30    28.80
+##  1          27.21 0.7299 675    25.77    28.64
+##  2          26.93 0.7268 675    25.50    28.35
+##  3          28.42 0.3182 675    27.79    29.04
+##  4          29.16 0.4201 675    28.33    29.98
+##  5          29.97 0.4285 675    29.13    30.81
+## 
+## Results are averaged over the levels of: gender 
+## Confidence level used: 0.95
+```
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+
+One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
+
+]
+
+.pull-right[
+
+```r
+cs &lt;- list(
+  "12-45" = c(0, -0.5, -0.5, 0, 0.5, 0.5),
+  "0-3" = c(-1, 0, 0, 1, 0, 0),
+  "all-last" = c(-rep(0.2, 5), 1)
+)
+contrast(emms, cs, adjust = "holm")
+```
+
+```
+##  contrast estimate     SE  df t.ratio p.value
+##  12-45       2.498 0.5960 675   4.191  0.0001
+##  0-3         0.864 0.7109 675   1.215  0.2246
+##  all-last    2.120 0.5033 675   4.213  0.0001
+## 
+## Results are averaged over the levels of: gender 
+## P value adjustment: holm method for 3 tests
+```
+]
+
+
+---
+class: inline-grey
+# Beyond Linear Models with Normal Residual Distribution
+
+Statistical models defined by relationship of covariates and assumption of residual probability distribution. `formula` defines the relationship of covariates, `function` defines distributional assumption.
+
+
+- (1) Most models assume independent data points (i.e., no replicates or repeated measures):  
+- `lm()` linear model (normal distribution of residuals, includes multivariate IVs)
+- `glm()` generalized linear model (other residual distribution, e.g., binomial, Poisson)
+- `MASS::rlm()` robust linear model
+- `MASS::polr()` ordered logistic or probit regression
+- `MASS::loglm()` log-linear model (for contingency tables)
+- `nnet::multinom()` models for multinomial data
+- `ordinal::clm()` cumulative link models for ordinal data
+
+
+- (2) Models support repeated-measures usually via random-effects parameters:
+- `nlme::lme()` linear mixed-effects models (generally superseded by `lme4`)
+- `lme4::lmer()` linear mixed-effects models (modern implementation)
+- `lme4::glmer()` generalized linear mixed-effects models
+- `ordinal::clmm2()` cumulative link mixed models for ordinal data
+- `mcmcGLMM` Bayesian generalized linear mixed-effects models
+- `rstanarm::stan_lmer()`/`stan_glmer()` **Bayesian (generalized) linear mixed-effects models**
+- `brms::brm()` **general framework for formula-based Bayesian models; extremely flexible**
+
+
+---
+class: inline-grey
+# Summary: Analysis with Statistical Models in R
+
+1. Identify probability distribution of data (more correct: of residuals/conditional distribution)
+2. Make sure variables are of correct type via `str()`
+3. Set appropriate contrasts (orthogonal contrasts if model includes interaction): `afex::set_sum_contrasts()`
+4. Describe statistical model using `formula`
+4. Fit model: pass `formula` and `data.frame` to corresponding modeling function (e.g., `lm()`, `glm()`)
+4. Check model fit (e.g., inspect residuals)
+5. Test terms (i.e., main effects and interactions): Pass fitted model to `car::Anova()`  
+    Note: parameter estimates (e.g., `coef` or `summary`) are often not informative for models involving categorical variables, especially if the variables have more than three levels.
+7. Follow-up tests: 
+   - Estimated marginal means: Pass fitted model to `emmeans::emmeans()` (formerly `lsmeans`)
+   - Specify specific contrasts on estimated marginal means (e.g., `contrast()`, `pairs()`)
+
+--
+
+`afex` combines fitting (5.) and testing (7.):
+- ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
+- (Generalized) linear mixed-effects models: `afex::mixed()`
+
+---
+class: small
+# ANOVAs with afex
+
+.pull-left[
+`afex::aov_car()` allows specification of ANOVA using formula, but requires specification of participant id in `Error()` term.
+
+
+```r
+library("afex")
+sat.act$id &lt;- factor(1:nrow(sat.act))
+(a1 &lt;- aov_car(ACT ~ gender+Error(id), sat.act))
+```
+
+```
+# Anova Table (Type 3 tests)
+# 
+# Response: ACT
+#   Effect     df   MSE    F  ges p.value
+# 1 gender 1, 685 23.33 1.19 .002     .28
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+```
+
+```r
+sat_long &lt;- tidyr::gather(
+  sat.act, key = "SAT_type", 
+  value = "SAT_value", SATV, SATQ)
+```
+
+]
+
+--
+.pull-right[
+
+
+```r
+(a2 &lt;- aov_car(SAT_value ~ gender*SAT_type+
+                 Error(id/SAT_type), sat_long))
+```
+
+```
+# Anova Table (Type 3 tests)
+# 
+# Response: SAT_value
+#            Effect     df      MSE         F   ges p.value
+# 1          gender 1, 685 21348.07   7.34 **  .009    .007
+# 2        SAT_type 1, 685  4527.32      0.60 .0002     .44
+# 3 gender:SAT_type 1, 685  4527.32 21.54 ***  .005  &lt;.0001
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+```
+
+```r
+emmeans(a2, c("gender", "SAT_type"))
+```
+
+```
+#  gender SAT_type emmean    SE     df lower.CL upper.CL
+#  male   SATV      612.2 6.458 1045.7    599.5    624.8
+#  female SATV      607.5 6.131  895.9    595.4    619.5
+#  male   SATQ      632.7 6.458 1045.7    620.0    645.3
+#  female SATQ      592.8 6.131  895.9    580.8    604.8
+# 
+# Confidence level used: 0.95
+```
+
+]
+
+---
+class: center, middle, inverse
+
+# Repeated-Measures
+
+---
+class: inline-grey
+# IID Assumption
+
+- Ordinary linear regression, between-subjects ANOVA, and basically all standard statistical models share one assumption: Data points are *independent and identically distributed* (*iid*).
+  - Independence assumption refers to residuals: After taking structure of model (i.e., parameters) into account, probability of a data point having a specific value is independent of all other data points.
+  - Identical distribution: All observations sampled from same distribution.
+
+
+- For repeated-measures independence assumption often violated (e.g., data points from one participant more likely to be similar to each other).
+- Violation of independence assumption can have dramatic consequences on statistical inferences from a model (e.g., increased or decreased Type I errors).
+
+
+- Three approaches for dealing with repeated-measures (e.g., Gelman &amp; Hill, 2007):
+  1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
+  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
+
+---
+class: small
+
+### Complete Pooling
+- 1 set of parameters `\(\Theta\)` for data *n*, usually aggregated across participants
+- Likelihood: `\(ln(L({\bf n} \mid \Theta))\)`
+- Easy to implement
+- Ignores individual variability
+
+--
+
+### No Pooling
+- 1 set of parameters `\(\Theta_i\)` for each individual data set `\({\bf n_i}\)`
+- Likelihood: `\(\sum_{i = 1}^N ln(L({\bf n_i} \mid \Theta_i))\)`
+- Requires considerable data on the individual level, otherwise parameter prone to overfitting
+- Results sometimes not easy to combine
+
+--
+
+### Partial Pooling
+- 1 set of group-level parameters `\({\hat \Theta}\)` and 1 set of parameters `\(\Theta_i\)` for each individual data set `\({\bf n_i}\)`
+- Likelihood: `\(\sum_{i = 1}^N ln(L({\bf n_i} \mid \Theta_i, {\hat \Theta})) + ln(L(\Theta_i \mid {\hat \Theta}))\)`
+- Requires distributional assumption for group-level parameters (e.g., individual-level data normally distributed around group-level parameters)
+- Provides on average better estimates for both individual-level and group-level parameters (e.g., [Stein's paradox](https://en.wikipedia.org/wiki/Stein%27s_example))
+- Estimation can be difficult in a frequentist setting (alternatives: penalized or restricted maximum likelihood estimation or Bayesian estimation)
+
+---
+class: small
+
+## Example Data: Productivity Scores for Machines and Workers
+
+
+```r
+data("Machines", package = "MEMSS")
+str(Machines)
+```
+
+```
+## 'data.frame':	54 obs. of  3 variables:
+##  $ Worker : Factor w/ 6 levels "1","2","3","4",..: 1 1 1 2 2 2 3 3 3 4 ...
+##  $ Machine: Factor w/ 3 levels "A","B","C": 1 1 1 1 1 1 1 1 1 1 ...
+##  $ score  : num  52 52.8 53.1 51.8 52.8 53.1 60 60.2 58.4 51.1 ...
+```
+
+- `Worker`: `Factor` giving unique identifier for the worker.
+- `Machine`: `Factor` with levels A, B, and C identifying machine brand.
+- `score`: Overall productivity score taking into account number and quality of components produced.
+
+Research question: Do the machines differ in their score?
+
+
+
+
+```r
+library("tidyverse")
+Machines %&gt;% group_by(Machine) %&gt;% 
+  summarise(m = mean(score), se = sd(score)/sqrt(n()))
+```
+
+```
+## # A tibble: 3 x 3
+##   Machine     m    se
+##   &lt;fct&gt;   &lt;dbl&gt; &lt;dbl&gt;
+## 1 A        52.4 0.940
+## 2 B        60.3 1.92 
+## 3 C        66.3 0.989
+```
+
+
+---
+
+## Example Data: Productivity Scores for Machines and Workers
+
+
+```r
+ggplot(Machines, aes(x = Machine, y = score)) +
+  geom_point() + 
+  facet_wrap(~ Worker) + 
+  theme_light()
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-60-1.svg)&lt;!-- --&gt;
+
+---
+
+## Productivity Scores for Machines and Workers: Complete Pooling
+
+
+.pull-left[
+(1) Aggregate data
+
+
+```r
+mach_agg &lt;- Machines %&gt;% 
+  group_by(Worker, Machine) %&gt;% 
+  summarise(score = mean(score))
+```
+
+
+
+(2) Estimate model
+
+
+```r
+afex::set_sum_contrasts()
+mmach &lt;- lm(score ~ Machine, mach_agg)
+car::Anova(mmach, type = 3)
+```
+
+```
+## Anova Table (Type III tests)
+## 
+## Response: score
+##             Sum Sq Df F value Pr(&gt;F)    
+## (Intercept)  64046  1 1727.43 &lt;2e-16 ***
+## Machine        585  2    7.89 0.0046 ** 
+## Residuals      556 15                   
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+]
+
+
+.pull-right[
+(3) Follow-up test
+
+
+```r
+library("emmeans")
+pairs(emmeans(mmach, "Machine"), 
+      adjust = "holm")
+```
+
+```
+##  contrast estimate    SE df t.ratio p.value
+##  A - B      -7.967 3.515 15  -2.266  0.0773
+##  A - C     -13.917 3.515 15  -3.959  0.0038
+##  B - C      -5.950 3.515 15  -1.693  0.1112
+## 
+## P value adjustment: holm method for 3 tests
+```
+
+]
+---
+class: small
+
+## No Pooling
+
+(1) Select worker 1
+
+
+```r
+dm1 &lt;- Machines %&gt;% 
+  filter(Worker == "1")
+```
+
+(2) Estimate model for worker 1
+
+
+```r
+m1 &lt;- lm(score ~ Machine, dm1)
+car::Anova(m1, type = 3)
+```
+
+```
+## Anova Table (Type III tests)
+## 
+## Response: score
+##             Sum Sq Df F value  Pr(&gt;F)    
+## (Intercept)  33391  1   72415 1.8e-13 ***
+## Machine        336  2     364 5.4e-07 ***
+## Residuals        3  6                    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+(3) Record statistic of interest (e.g., *F*-value or *p*-value).  
+(4) Calculate statistic for other workers and record as well.  
+(5) Investigate distribution of statistics (e.g., all *p*-values smaller .05?).  
+
+---
+class: small
+
+## Simple Partial-Pooling: Repeated-measures ANOVA
+
+
+```r
+a1 &lt;- aov_car(score ~ Error(Worker/Machine), Machines)
+a1
+```
+
+```
+## Anova Table (Type 3 tests)
+## 
+## Response: score
+##    Effect         df   MSE         F ges p.value
+## 1 Machine 1.60, 8.00 17.77 20.58 *** .51   .0010
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+## 
+## Sphericity correction method: GG
+```
+
+.pull-left[
+
+```r
+pairs(emmeans(a1, "Machine"), 
+      adjust = "holm")
+```
+
+```
+##  contrast estimate    SE df t.ratio p.value
+##  A - B      -7.967 2.177 10  -3.660  0.0088
+##  A - C     -13.917 2.177 10  -6.393  0.0002
+##  B - C      -5.950 2.177 10  -2.733  0.0211
+## 
+## P value adjustment: holm method for 3 tests
+```
+]
+
+--
+
+.pull-right[
+
+```r
+pairs(emmeans(mmach, "Machine"), 
+      adjust = "holm")  ## no pooling results
+```
+
+```
+##  contrast estimate    SE df t.ratio p.value
+##  A - B      -7.967 3.515 15  -2.266  0.0773
+##  A - C     -13.917 3.515 15  -3.959  0.0038
+##  B - C      -5.950 3.515 15  -1.693  0.1112
+## 
+## P value adjustment: holm method for 3 tests
+```
+
+]
+
+
+
+
+---
+class: small
+
+# Example Data 2
+
+![](cognition_cutout.png)
+
+
+---
+class: small, inline-grey
+
+### Skovgaard-Olsen et al. (2016)
+
+- Conditional = *if-then* statement; e.g., If global warning continues, London will be flooded.
+- Bayesian reasoning often assumes 'the Equation': *P*(if *A* then *B*) = *P*(*B*|*A*)
+- Our question: Does 'the Equation' hold? 
+- Participants provide idiosyncratic estimates of both *P*(if *A* then *B*) and *P*(*B*|*A*).
+
+- ~100 participants recruited via `crowdflower.com` worked on 12 items:
+
+&gt; Sophia's scenario: Sophia wishes to find a nice present for her 13-year-old son, Tim, for Christmas. She is running on a tight budget, but she knows that Tim loves participating in live role-playing in the forest and she is really skilled at sewing the orc costumes he needs. Unfortunately, she will not be able to afford the leather parts that such costumes usually have, but she will still be able to make them look nice.
+
+--
+
+(1) *P*(*B*|*A*) (`B_given_A`):
+  &gt; Suppose Sophia makes Tim an orc costume.
+  &gt; Under this assumption, how probable is it that the following sentence is true:   
+  &gt; Tim will be excited about his present.
+
+--
+
+(2) *P*(if *A* then *B*) (`if_A_then_B`):
+  &gt; Could you please rate the probability that the following sentence is true:   
+  &gt; IF Sophia makes Tim an orc costume, THEN he will be excited about his present.
+
+---
+
+class: small 
+
+.pull-left[
+### Skovgaard-Olsen et al. (2016)
+
+- Does 'the Equation' (i.e., *P*(if *A* then *B*) = *P*(*B*|*A*)) hold? 
+
+- Participants provided idiosyncratic estimates of *P*(if *A* then *B*) (`if_A_then_B`) and *P*(*B*|*A*) (`B_given_A`) for each item.
+- Each participant worked on 12 items.
+
+
+
+```r
+# Session -&gt; Set Working Directory -&gt;
+# -&gt; To Source File Location
+load("ssk16_dat_tutorial.rda") 
+# full data: https://osf.io/j4swp/
+str(dat, width=50, strict.width = "cut")
+```
+
+```
+## 'data.frame':	1128 obs. of  7 variables:
+##  $ p_id         : Factor w/ 94 levels "102_P(if"..
+##  $ i_id         : Factor w/ 12 levels "1","2",""..
+##  $ B_given_A    : num  52 60 6 0 8 8 79 0 51 79 ..
+##  $ B_given_A_c  : num  0.02 0.1 -0.44 -0.5 -0.42..
+##  $ if_A_then_B  : num  52 1 5 0 7 0 84 0 51 94 ...
+##  $ if_A_then_B_c: num  0.02 -0.49 -0.45 -0.5 -0...
+##  $ rel_cond     : Factor w/ 3 levels "PO","NE","..
+```
+
+]
+
+.pull-right[
+
+
+```r
+ggplot(data = dat) + 
+  geom_point(mapping = aes(x = B_given_A, 
+                           y = if_A_then_B), 
+             alpha = 0.2, pch = 16, size = 3) + 
+  coord_fixed() +
+  theme_light() +
+  theme(text = element_text(size=20))
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-71-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+class: small
+
+.pull-left[
+
+### Skovgaard-Olsen et al. (2016): Complete Pooling
+
+(1) Overall
+
+
+```r
+m1 &lt;- lm(if_A_then_B~B_given_A, dat)
+broom::tidy(m1)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic   p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    5.59     1.34        4.17 3.24e-  5
+## 2 B_given_A      0.707    0.0217     32.6  1.90e-164
+```
+
+
+]
+
+--
+
+.pull-right[
+
+(2) By-Participant
+
+
+```r
+dat_p &lt;- dat %&gt;% 
+  group_by(p_id) %&gt;% 
+  summarise_if(is.numeric, mean)
+  
+m2 &lt;- lm(if_A_then_B~B_given_A, dat_p)
+broom::tidy(m2)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)   -0.956    4.97      -0.192 8.48e- 1
+## 2 B_given_A      0.842    0.0996     8.46  4.04e-13
+```
+
+
+(3) By-Item
+
+
+```r
+dat_i &lt;- dat %&gt;% 
+  group_by(i_id) %&gt;% 
+  summarise_if(is.numeric, mean)
+  
+m3 &lt;- lm(if_A_then_B~B_given_A, dat_i)
+broom::tidy(m3)
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+## 1 (Intercept)   13.9       9.18       1.52  0.160 
+## 2 B_given_A      0.536     0.187      2.86  0.0170
+```
+
+]
+
+---
+
+### Skovgaard-Olsen et al. (2016): No Pooling (By-Participant) I
+
+
+
+```r
+no_pooling_estimates &lt;- dat %&gt;% 
+  group_by(p_id) %&gt;% 
+  do(broom::tidy(lm(if_A_then_B ~ B_given_A, .)))
+## see: https://stackoverflow.com/a/30015869/289572
+
+no_pooling_estimates
+```
+
+```
+## # A tibble: 188 x 6
+## # Groups:   p_id [94]
+##    p_id           term        estimate std.error statistic p.value
+##    &lt;fct&gt;          &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+##  1 102_P(if,then) (Intercept)    2.31      7.95     0.290  0.777  
+##  2 102_P(if,then) B_given_A      0.547     0.161    3.41   0.00669
+##  3 107_P(if,then) (Intercept)   -4.69     12.6     -0.372  0.718  
+##  4 107_P(if,then) B_given_A      0.640     0.246    2.60   0.0265 
+##  5 108_P(if,then) (Intercept)    9.72     19.8      0.491  0.634  
+##  6 108_P(if,then) B_given_A      0.487     0.355    1.37   0.200  
+##  7 110_P(if,then) (Intercept)    0.254    10.5      0.0242 0.981  
+##  8 110_P(if,then) B_given_A      0.846     0.210    4.03   0.00241
+##  9 111_P(if,then) (Intercept)    9.93     16.1      0.615  0.552  
+## 10 111_P(if,then) B_given_A      0.401     0.248    1.61   0.138  
+## # ... with 178 more rows
+```
+
+---
+class: small
+
+### Skovgaard-Olsen et al. (2016): No Pooling (By-Participant) II
+
+.pull-left[
+
+```r
+slopes &lt;- no_pooling_estimates %&gt;% 
+  filter(term == "B_given_A")
+
+ggplot(slopes, aes(estimate)) +
+  geom_histogram(bins = 35) +
+  theme_light() +
+  theme(text = element_text(size=20))
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-76-1.svg)&lt;!-- --&gt;
+
+]
+--
+
+.pull-right[
+
+```r
+m_no &lt;- lm(estimate ~ 1, slopes)
+car::Anova(m_no, type = 3)
+```
+
+```
+## Anova Table (Type III tests)
+## 
+## Response: estimate
+##             Sum Sq Df F value Pr(&gt;F)    
+## (Intercept)   45.4  1     720 &lt;2e-16 ***
+## Residuals      5.9 93                   
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+```
+
+```r
+broom::tidy(m_no)
+```
+
+```
+## # A tibble: 1 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)    0.695    0.0259      26.8 1.48e-45
+```
+
+]
+
+---
+class: center, middle, inverse
+
+# Partial-Pooling for Skovgaard-Olsen et al. (2016) Data Requires Mixed-Models
+
+---
+
+## Summary: Repeated-Measures and Pooling
+
+- IID assumption (i.e., independent and identically distributed) shared by most "standard" statistical model. 
+- In case of repeated-measures, independence assumption often violated (e.g., data points from one participant more likely to be similar to each other).
+- Violation of independence assumption can have dramatic consequences on statistical inferences from a model (e.g., increased or decreased Type I errors).
+
+
+- Three approaches for dealing with repeated-measures (e.g., Gelman &amp; Hill, 2007):
+  1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
+  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
+
+
+---
+### References Statistical Modeling:
+- John Fox and Sanford Weisberg (2011). *An R Companion to Applied Regression, Second Edition.* Thousand Oaks CA: Sage. URL: http://socserv.socsci.mcmaster.ca/jfox/Books/Companion
+- Gelman, A., &amp; Hill, J. (2007). *Data analysis using regression and multilevel/hierarchical models.* Cambridge; New York: Cambridge University Press.
+- Russell V. Lenth (2016). Least-Squares Means: The R Package lsmeans. *Journal of Statistical Software*, 69(1), 1-33. https://doi.org/10.18637/jss.v069.i01
+- Cohen, J., Cohen, P., West, S. G., &amp; Aiken, L. S. (2002). *Applied Multiple Regression/Correlation Analysis for the Behavioral Sciences.* New York: Routledge Academic.
+
+### References Example Data:
+- Revelle, William, Wilt, Joshua, and Rosenthal, Allen (2009) Personality and Cognition: The Personality-Cognition Link. In Gruszka, Alexandra and Matthews, Gerald and Szymura, Blazej (Eds.) _Handbook of Individual Differences in Cognition: Attention, Memory and Executive Control_, Springer.
+- Skovgaard-Olsen, N., Singmann, H., &amp; Klauer, K. C. (2016). The relevance effect and conditionals. *Cognition*, 150, 26-36. https://doi.org/10.1016/j.cognition.2015.12.017
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

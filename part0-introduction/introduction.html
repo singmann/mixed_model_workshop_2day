@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mixed Models in R</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Henrik Singmann (University of Zurich) Twitter: @HenrikSingmann" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="my-theme.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Mixed Models in R
+## An Applied Introduction
+### Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
+### July 2018
+
+---
+
+
+
+
+
+
+
+class: inline-grey
+# Outline
+
+1. Introduction: Modern `R`
+2. Statistical Modeling in `R`
+3. Dealing with repeated-measures (pooling)
+4. Mixed models
+
+---
+class: small
+
+### Research and Statistics
+
+- *Substantive research questions*
+    1. Negative cognitive distortions sustain depressive symptoms.
+    2. Interference and not decay is the main source of forgetting in memory.
+    3. Inhibition is a specific and general mental ability, like IQ. 
+
+--
+
+- *Operationalization and measurement*
+    1. Educating patients how to escape their negative thoughts should reduce depressive symptoms.
+    2. Control independently time of delay and amount of new information.
+    3. Ability to suppress distracting information should be related across tasks. For example, Stroop performance and flanker performance.
+    
+--
+
+
+- Substantive questions cannot be directly adressed via empirical means (e.g., [Duhem-Quine thesis](https://en.wikipedia.org/wiki/Duhem%E2%80%93Quine_thesis)).
+- Researchers use empirical observations (data) for making arguments about research questions.
+- Appropriate *research methods* (e.g., experimental design, reliability, validity, reproducibility) help in making better (i.e., more convincing) arguments. 
+- *Data visualization* and *statistics* are important tools for making good arguments about data:
+    - A statistic cannot prove nor disprove a substantive research question or empirical hypothesis: *statistical arguments need context (e.g., data visualization).* [this is why AIC/BIC/WAIC/... often sucks]
+    - Some statistical arguments are better, some are worse, and some have essentially no evidential value.
+    - *Statistics is not a ritual* (e.g., [Gigerenzer, 2018](https://doi.org/10.1177/2515245918771329)). Instead, statistics is a toolkit, researchers have to select the right tool for each job.
+--
+- "There are no routine statistical questions, only questionable statistical routines." (David Cox)
+- "The combination of some data and an aching desire for an answer does not ensure that a reasonable answer can be extracted from a given body of data." (John Tukey)
+    
+
+---
+
+### Process and Tools: `tidyverse` and `RMarkdown`
+
+![](figures/data-science.png) 
+
+Conceptual model of data analysis (source: [Wickham &amp; Grolemund (2017): R for Data Science](http://r4ds.had.co.nz))
+
+
+--
+
+- `tidyverse`: Selection of packages curated/developed by `RStudio`:
+    - [`readr`](https://readr.tidyverse.org/): Reading data in, the `RStudio` way.
+    - Data wrangling with [`tibble`](http://tibble.tidyverse.org/), [`magrittr`](http://magrittr.tidyverse.org/), [`tidyr`](http://tidyr.tidyverse.org/), and [`dplyr`](http://dplyr.tidyverse.org/): Coherent set of functions for tidying, transforming, and working with rectangular data. Supersedes many base `R` functions and makes common problems easy. 
+    - [`ggplot2`](http://ggplot2.tidyverse.org/): System for data visualization.
+    - [`purr`](http://purrr.tidyverse.org/) and [`broom`](https://broom.tidyverse.org/): Advanced modeling with the `tidyverse`.
+
+--
+
+- `RMarkdown` "authoring framework for data science".
+
+---
+
+# `RMarkdown`
+
+
+- Context requires combination of a narrative/prose with data visualization and statistical results.
+- `RMarkdown` "authoring framework for data science".
+- Single document, `.Rmd` file, combines text, pictures, and `R` code.
+- Render document: Runs code and combines text, pictures, code, and output (i.e., text output and plots) into nicely formatted result:
+    - `html` file
+    - `pdf` or `Word` file
+    - presentation (like this one)
+    - blog or other website (`blogdown`), books (`bookdown`), interactive tutorials (`learnr`), [...](https://www.rstudio.com/resources/videos/r-markdown-eight-ways/)
+
+--
+
+- `RMarkdown` is efficient, easy to use, ensures reproducibility, and
+  - is ideal for communicating results with collaborators or PIs,
+  - can be used for for writing preregistrations with [`prereg`](https://cran.r-project.org/package=prereg), 
+  - and even for writing papers (i.e., [`papaja`](https://github.com/crsh/papaja)).
+
+--
+
+
+- *Warning:* If you send an `RMarkdown` `html` report, it needs to be downloaded before figures are visible (e.g., opening it directly from `gmail` does not show plots)!
+
+---
+class:inline-grey, small
+
+### `RMarkdown` - First Steps
+
+- Create new `RMarkdown` document: `File` -&gt; `New File` -&gt; `R Markdown...`
+- Enter title and your name -&gt; Keep `html` selected -&gt; `Ok`
+- `Save` file somewhere (e.g., `test.Rmd` in `Downloads`) -&gt; `Knit` creates and opens `html` document
+
+
+---
+
+### `RMarkdown` Document Example ([source](http://rstudio-pubs-static.s3.amazonaws.com/202429_acbbe794b27f4dffaac6047d1b6d5aa0.html))
+
+![](figures/RMarkdown-example.png)
+
+---
+class:inline-grey, small
+
+### `RMarkdown` - YAML Header
+
+
+
+```r
+---
+title: "My Title"
+author: "Henrik Singmann"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: true
+    theme: paper
+    highlight: espresso
+---
+```
+
+- `YAML` Stands for "YAML Ain't Markup Language"
+- This is where you set options for your overall document, for example: 
+      - [output format](https://rmarkdown.rstudio.com/formats.html) (`html_document`, `pdf_document`, `word_document`, `github_document`, ...)
+      - add and format table of content
+      - appearance (also add custom `css`)
+      - see [`RMarkdown` cheat sheet](https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf) or https://rmarkdown.rstudio.com/html_document_format.html
+
+---
+class: small
+
+### Text Formatting 
+
+.pull-left[
+![](figures/ch-02-markdown-margin.png)
+
+`[link](www.rstudio.com)` -&gt; [link](www.rstudio.com)
+
+
+(source: http://socviz.co/gettingstarted.html#work-in-plain-text-using-rmarkdown)
+]
+
+
+
+---
+class: small
+
+![](figures/markdownChunk2.png)
+
+---
+
+### Code Chunks
+
+````
+```{r chunk_name, echo=FALSE}
+1 + 1
+```
+````
+
+
+```
+## [1] 2
+```
+
+- Run a code chunk with `Ctrl`/`Cmd` + `Shift` + `Enter`
+
+Important chunk options:
+- `echo`: Display code in output document (default = `TRUE`)
+- `eval`: Run code in chunk (default = `TRUE`)
+- `include`: Include chunk and output in doc after running (default = `TRUE`)
+- `fig.height` and `fig.width`: Dimensions of plots in inches
+- `error`: Display error messages in doc (`TRUE`) or stop render when errors occur (`FALSE`) (default = `FALSE`)
+- `warning`: display code warnings in document (default = `TRUE`)
+- `results`: How to format results:
+  - default = `'markup'`
+  - `'asis'` - pass through results
+  - `'hide'` - do not display results
+  - `'hold'` - put all results below all code
+- `cache`: cache results for future knits (default = `FALSE`)
+
+--
+
+Try replacing `summary(cars)` with `str(cars)`
+
+---
+class: small, inline-grey
+
+- visit: [`https://github.com/singmann/mixed_model_workshop/releases`](https://github.com/singmann/mixed_model_workshop/releases)
+- Download `Source code (zip)` (or `Source code (tar.gz) `)
+
+&lt;img src="figures/github-workshop.png" style="width: 80%" align="center" /&gt;
+
+
+
+---
+class: inline-grey
+
+## Workshop Materials
+
+- `zip` Archive contains all materials (e.g., slides, code, exercises) of the current workshop
+- Extract `zip` archive if necessary
+- All slides are built using `RMarkdown` and `xaringan` package.
+- `part0-introduction` materials for introduction session (these slides).
+-  `part1-statistical-modeling-in-r` materials for statistical modeling session.
+- `part2-mixed-models-in-r` materials for mixed models session.
+- In each folder:
+  - `.Rmd` file is the `RMarkdown` containing text and code for the slides.
+  - `.R` file only contains the code for the slides and no text.
+  - You can follow the presentation by following either file. Don't forget:
+      - Run a code chunk (i.e., grey block) with `Ctrl`/`Cmd` + `Shift` + `Enter`
+      - Run a single line of code with `Ctrl`/`Cmd` + `Enter`
+  - `.html` is the full presentation you are seeing. After opening, press `h` for help.
+- `exercises` contains some exercises.
+- `handout` contains the handout (also includes the `RMarkdown` file)
+
+---
+class: center, middle, inverse
+
+# `tidyverse`
+
+---
+class: small
+
+.pull-left[
+### `tibble`
+
+- "**tibble** or `tbl_df` is a modern reimagining of the data.frame, keeping what time has proven to be effective, and throwing out what is not."
+- Dramtically enhanced `print` method.
+- Does not change `strings` to `factors`.
+- Complains when a variable is missing (i.e., no partial matching).
+- Allows list columns (with nice printing).
+
+
+```r
+iris
+```
+
+
+```
+##   Sepal.Length Sepal.Width Petal.Length
+## 1          5.1         3.5          1.4
+## 2          4.9         3.0          1.4
+## 3          4.7         3.2          1.3
+## 4          4.6         3.1          1.5
+## 5          5.0         3.6          1.4
+```
+
+[...]
+
+
+```r
+iris$Spec
+```
+
+```
+##   [1] setosa     setosa     setosa     setosa    
+##   [5] setosa     setosa     setosa     setosa    
+##   [9] setosa     setosa     setosa     setosa    
+##  [13] setosa     setosa     setosa     setosa    
+##  [17] setosa     setosa     setosa     setosa    
+##  [21] setosa     setosa     setosa     setosa    
+##  [25] setosa     setosa     setosa     setosa    
+##  [29] setosa     setosa     setosa     setosa    
+##  [33] setosa     setosa     setosa     setosa    
+##  [37] setosa     setosa     setosa     setosa    
+##  [41] setosa     setosa     setosa     setosa    
+##  [45] setosa     setosa     setosa     setosa    
+##  [49] setosa     setosa     versicolor versicolor
+##  [53] versicolor versicolor versicolor versicolor
+##  [57] versicolor versicolor versicolor versicolor
+##  [61] versicolor versicolor versicolor versicolor
+##  [65] versicolor versicolor versicolor versicolor
+##  [69] versicolor versicolor versicolor versicolor
+##  [73] versicolor versicolor versicolor versicolor
+##  [77] versicolor versicolor versicolor versicolor
+##  [81] versicolor versicolor versicolor versicolor
+##  [85] versicolor versicolor versicolor versicolor
+##  [89] versicolor versicolor versicolor versicolor
+##  [93] versicolor versicolor versicolor versicolor
+##  [97] versicolor versicolor versicolor versicolor
+## [101] virginica  virginica  virginica  virginica 
+## [105] virginica  virginica  virginica  virginica 
+## [109] virginica  virginica  virginica  virginica 
+## [113] virginica  virginica  virginica  virginica 
+## [117] virginica  virginica  virginica  virginica 
+## [121] virginica  virginica  virginica  virginica 
+## [125] virginica  virginica  virginica  virginica 
+## [129] virginica  virginica  virginica  virginica 
+## [133] virginica  virginica  virginica  virginica 
+## [137] virginica  virginica  virginica  virginica 
+## [141] virginica  virginica  virginica  virginica 
+## [145] virginica  virginica  virginica  virginica 
+## [149] virginica  virginica 
+## Levels: setosa versicolor virginica
+```
+]
+
+--
+
+.pull-right[
+
+```r
+library("tibble") 
+iris2 &lt;- as_tibble(iris)
+iris2
+```
+
+```
+## # A tibble: 150 x 5
+##    Sepal.Length Sepal.Width Petal.Length
+##           &lt;dbl&gt;       &lt;dbl&gt;        &lt;dbl&gt;
+##  1          5.1         3.5          1.4
+##  2          4.9         3            1.4
+##  3          4.7         3.2          1.3
+##  4          4.6         3.1          1.5
+##  5          5           3.6          1.4
+##  6          5.4         3.9          1.7
+##  7          4.6         3.4          1.4
+##  8          5           3.4          1.5
+##  9          4.4         2.9          1.4
+## 10          4.9         3.1          1.5
+## # ... with 140 more rows, and 2 more variables:
+## #   Petal.Width &lt;dbl&gt;, Species &lt;fct&gt;
+```
+
+```r
+iris2$Spec
+```
+
+```
+## Warning: Unknown or uninitialised column: 'Spec'.
+```
+
+```
+## NULL
+```
+
+]
+
+---
+class:inline-grey
+
+## `magrittr`  &lt;img src="figures/magrittr.png" style="width: 10%" align="right" /&gt;
+
+- Pipe operator `%&gt;%` makes code more readable:
+  - structuring sequences of data operations left-to-right (as opposed to from the inside and out)
+  - avoiding nested function calls,
+  - minimizing need for local variables and function definitions.
+-  Add pipe with `Ctrl`/`Cmd` +`Shift` + `m` 
+
+.pull-left[
+### Pipe
+
+
+```r
+x %&gt;% f
+x %&gt;% f(y)
+x %&gt;% f %&gt;% g %&gt;% h
+
+x %&gt;% f(y, .)
+x %&gt;% f(y, z = .)
+```
+
+]
+
+.pull-right[
+### Base R
+
+```r
+f(x)
+f(x, y)
+h(g(f(x)))
+
+f(y, x)
+f(y, z = x)
+```
+
+]
+
+--
+
+Try it out:
+
+```r
+library(magrittr)
+iris2$Sepal.Length %&gt;% 
+  mean
+```
+
+---
+class: small
+
+### Tidy Data (`tidyr`)
+
+*"Tidy datasets are all alike, but every messy dataset is messy in its own way." -- Hadley Wickham*
+
+1. Put each data set in a `tibble`.
+2. Put each variable in a column.
+    1. Each variable must have its own column.
+    2. Each observation must have its own row.
+    3. Each value must have its own cell.
+![](figures/tidy-1.png)
+--
+
+- For psychologists: Transform wide into long data. See also: 
+- Wickham, H. (2014). Tidy data. *The Journal of Statistical Software*, 59(10). http://www.jstatsoft.org/v59/i10
+- Wickham, H., &amp; Grolemund, G. (2017). R for Data Science (ch. 12). http://r4ds.had.co.nz/tidy-data.html
+
+---
+
+### `dplyr`
+
+- grammar of data manipulation, providing a consistent set of verbs that help you solve the most common data manipulation challenges:
+  - `mutate()` adds new variables that are functions of existing variables
+  - `select()` picks variables based on their names.
+  - `filter()` picks cases based on their values.
+  - `summarise()` reduces multiple values down to a single summary.
+  - `arrange()` changes the ordering of the rows.
+- All combine naturally with `group_by()` which allows performing any operation "by group".
+
+--
+
+.pull-left[
+
+```r
+library("dplyr")
+iris2 %&gt;% 
+  filter(Species == "setosa") %&gt;% 
+  summarise(mean(Sepal.Length))
+```
+
+```
+## # A tibble: 1 x 1
+##   `mean(Sepal.Length)`
+##                  &lt;dbl&gt;
+## 1                 5.01
+```
+
+]
+
+--
+
+.pull-right[
+
+
+```r
+iris2 %&gt;%
+  group_by(Species) %&gt;% 
+  summarise(mean_l = mean(Sepal.Length),
+            max_l = max(Sepal.Length),
+            min_l = min(Sepal.Length),
+            sd_l = sd(Sepal.Length))
+```
+
+```
+## # A tibble: 3 x 5
+##   Species    mean_l max_l min_l  sd_l
+##   &lt;fct&gt;       &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 setosa       5.01   5.8   4.3 0.352
+## 2 versicolor   5.94   7     4.9 0.516
+## 3 virginica    6.59   7.9   4.9 0.636
+```
+]
+
+
+
+---
+
+### `ggplot2`
+
+- System for declaratively creating graphics, based on "The Grammar of Graphics" by Leland Wilkinson
+- "You provide data, tell `ggplot2` how to map variables to aesthetics what graphical primitives to use, and it takes care of the details."
+- `ggplot()` is the basic function which takes the data.
+- `aes()` is used for mapping aesthetics.
+- `geom_...` tells which primitive to use. 
+
+
+```r
+library("ggplot2")
+ggplot(iris2, aes(x = Petal.Width, y = Petal.Length)) +
+  geom_point()
+```
+--
+
+
+```r
+ggplot(iris2, aes(x = Petal.Width, y = Petal.Length, color = Species)) +
+  geom_point()
+```
+--
+
+
+
+```r
+ggplot(iris2, aes(x = Species, y = Petal.Length)) +
+  geom_jitter(width = 0.2) +
+  geom_boxplot(fill = "transparent") +
+  theme_bw()
+```
+--
+
+- Learning `ggplot2`:
+  - R for Data Science, http://r4ds.had.co.nz/, ch. 3 and ch. 28
+  - `ggplot2` cheat sheet: https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf
+
+---
+
+## Summary
+
+![](figures/data-science.png) 
+
+- Data analysis and statistics are iterative processes.
+- Goal of statistics is to support arguments connecting empirical data and substantive research questions.
+
+### `tidyverse`
+- Selection of packages providing a unified approach and syntax to common data analysis problems. 
+- To learn more about the `tidyverse` check out the free "R for Data Science" book by Wickham &amp; Grolemund: http://r4ds.had.co.nz/
+
+### `RMarkdown`
+- Allows combining prose, code, and output into one nicely formatted document. 
+- Great for communicating results and ensuring reproducibility.
+
+---
+class: inline-grey
+
+### Exercise
+
+- Open `exercises/exercise_0.Rmd` (or the exercise handout or  `exercises/exercise_0.nb.html` for a nicer format of the instruction).
+- Follow text and try to solve a few small tasks helping you to get comfortable with the `tidyverse` (without looking at the solution).
+- Main goal is for you getting comfortable with `dplyr` and `ggplot2` syntax.
+- Exercise uses response time data from Freeman, Heathcote, Chalmers, and Hockley (2010).
+- Participants did a lexical-decision task or a naming task.
+
+The exercise uses yet another type of `RMarkdown` document, `html_notebook` instead of `html_document`:
+- `html_document`: "knitting" runs all code in a new `R` process from beginning to end (which ensures reproducibility).
+- In contrast, a `html_notebook`
+  - uses current `R` process (i.e., state of `Console`), similar to [`Jupyter`](http://jupyter.org/) (does *NOT* ensure reproducibility),
+  - allows to `Preview` the current state of the document as a `html` file,
+  - potentially better for initial analysis or situations involving expensive calculations,
+  - can be transformed into `html_document` by simply changing the YAML header.
+
+Remember:
+- Run a code chunk (i.e., grey block) with `Ctrl`/`Cmd` + `Shift` + `Enter`
+- Run a single line of code with `Ctrl`/`Cmd` + `Enter`
+
+---
+
+###  Links
+- `RStudio` cheat sheets: https://www.rstudio.com/resources/cheatsheets/
+    - `RStudio`: https://github.com/rstudio/cheatsheets/raw/master/rstudio-ide.pdf
+    - `RMarkdown`: https://github.com/rstudio/cheatsheets/raw/master/rmarkdown-2.0.pdf
+    - `ggplot2`: https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf
+    - `dplyr` &amp; `tidyr`: https://github.com/rstudio/cheatsheets/raw/master/data-transformation.pdf
+
+- Introduction to Open Data Science: http://ohi-science.org/data-science-training/
+- R for Data Science: http://r4ds.had.co.nz/
+- Data Visualization: A practical introduction: http://socviz.co/
+- Exploratory Data Analysis with R: https://bookdown.org/rdpeng/exdata/
+- The Art of Data Science: https://bookdown.org/rdpeng/artofdatascience/
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
