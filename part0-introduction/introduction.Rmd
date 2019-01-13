@@ -1,8 +1,8 @@
 ---
 title: "Mixed Models in R"
 subtitle: "An Applied Introduction"
-author: "Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "July 2018"
+author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
+date: "January 2019"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
@@ -34,7 +34,7 @@ class: inline-grey
 1. Introduction: Modern `R`
 2. Statistical Modeling in `R`
 3. Dealing with repeated-measures (pooling)
-4. Mixed models
+4. Mixed models (day 2)
 
 ---
 class: small
@@ -214,9 +214,32 @@ Important chunk options:
 Try replacing `summary(cars)` with `str(cars)`
 
 ---
+class: inline-grey
+
+# Working Effectively With `RMarkdown`
+
+- `RMarkdown` documents ensure full reproducibility (at least as long as new package versions do not break existing code, but see [`checkpoint`](https://cran.r-project.org/package=checkpoint) or [`packrat`](https://cran.r-project.org/package=packrat))
+- Downside: Knitting or compiling a document can take time as all computations have to be redone.
+- During initial stages of analysis, many iterations and different approaches common. Faster development cycle then rerunning whole analysis preferrable.
+
+
+- `R Notebook`: Like `RMarkdown` but uses current `R Session`
+    - Saving file updates `html` document immediately
+    - Ideal for initial development and problem solving
+    - `output: html_notebook`
+
+
+
+- `R Markdown`: Better for final analysis as reproducibility is ensured
+    - Uses new `R` instance
+    - `output: html_document`, `pdf_document`, ...
+
+### 
+
+---
 class: small, inline-grey
 
-- visit: [`https://github.com/singmann/mixed_model_workshop/releases`](https://github.com/singmann/mixed_model_workshop/releases)
+- visit: [`https://github.com/singmann/mixed_model_workshop_2day/releases`](https://github.com/singmann/mixed_model_workshop_2day/releases)
 - Download `Source code (zip)` (or `Source code (tar.gz) `)
 
 <img src="figures/github-workshop.png" style="width: 80%" align="center" />

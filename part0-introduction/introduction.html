@@ -3,7 +3,7 @@
   <head>
     <title>Mixed Models in R</title>
     <meta charset="utf-8">
-    <meta name="author" content="Henrik Singmann (University of Zurich) Twitter: @HenrikSingmann" />
+    <meta name="author" content="Henrik Singmann (University of Warwick) Twitter: @HenrikSingmann" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
     <link rel="stylesheet" href="my-theme.css" type="text/css" />
@@ -14,8 +14,8 @@ class: center, middle, inverse, title-slide
 
 # Mixed Models in R
 ## An Applied Introduction
-### Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### July 2018
+### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
+### January 2019
 
 ---
 
@@ -31,7 +31,7 @@ class: inline-grey
 1. Introduction: Modern `R`
 2. Statistical Modeling in `R`
 3. Dealing with repeated-measures (pooling)
-4. Mixed models
+4. Mixed models (day 2)
 
 ---
 class: small
@@ -80,7 +80,7 @@ Conceptual model of data analysis (source: [Wickham &amp; Grolemund (2017): R fo
     - [`readr`](https://readr.tidyverse.org/): Reading data in, the `RStudio` way.
     - Data wrangling with [`tibble`](http://tibble.tidyverse.org/), [`magrittr`](http://magrittr.tidyverse.org/), [`tidyr`](http://tidyr.tidyverse.org/), and [`dplyr`](http://dplyr.tidyverse.org/): Coherent set of functions for tidying, transforming, and working with rectangular data. Supersedes many base `R` functions and makes common problems easy. 
     - [`ggplot2`](http://ggplot2.tidyverse.org/): System for data visualization.
-    - [`purr`](http://purrr.tidyverse.org/) and [`broom`](https://broom.tidyverse.org/): Advanced modeling with the `tidyverse`.
+    - [`purrr`](http://purrr.tidyverse.org/) and [`broom`](https://broom.tidyverse.org/): Advanced modeling with the `tidyverse`.
 
 --
 
@@ -213,9 +213,32 @@ Important chunk options:
 Try replacing `summary(cars)` with `str(cars)`
 
 ---
+class: inline-grey
+
+# Working Effectively With `RMarkdown`
+
+- `RMarkdown` documents ensure full reproducibility (at least as long as new package versions do not break existing code, but see [`checkpoint`](https://cran.r-project.org/package=checkpoint) or [`packrat`](https://cran.r-project.org/package=packrat))
+- Downside: Knitting or compiling a document can take time as all computations have to be redone.
+- During initial stages of analysis, many iterations and different approaches common. Faster development cycle then rerunning whole analysis preferrable.
+
+
+- `R Notebook`: Like `RMarkdown` but uses current `R Session`
+    - Saving file updates `html` document immediately
+    - Ideal for initial development and problem solving
+    - `output: html_notebook`
+
+
+
+- `R Markdown`: Better for final analysis as reproducibility is ensured
+    - Uses new `R` instance
+    - `output: html_document`, `pdf_document`, ...
+
+### 
+
+---
 class: small, inline-grey
 
-- visit: [`https://github.com/singmann/mixed_model_workshop/releases`](https://github.com/singmann/mixed_model_workshop/releases)
+- visit: [`https://github.com/singmann/mixed_model_workshop_2day/releases`](https://github.com/singmann/mixed_model_workshop_2day/releases)
 - Download `Source code (zip)` (or `Source code (tar.gz) `)
 
 &lt;img src="figures/github-workshop.png" style="width: 80%" align="center" /&gt;
@@ -628,7 +651,7 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
 (function () {
   var script = document.createElement('script');
   script.type = 'text/javascript';
-  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
   if (location.protocol !== 'file:' && /^https?:/.test(script.src))
     script.src  = script.src.replace(/^https?:/, '');
   document.getElementsByTagName('head')[0].appendChild(script);
