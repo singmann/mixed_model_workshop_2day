@@ -12,9 +12,9 @@ Read the chapter to get a more comprehensive overview.
 
 The repo currently contains three `html` presentations:
 
-- [Part 0: Introduction to Modern `R`](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part0-introduction/introduction.html)
-- [Part 1: Statistical Modeling in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part1-statistical-modeling-in-r/statistical_modeling.html)
-- [Part 2: Mixed Models in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part2-mixed-models-in-r/mixed_models.html)
+- [Part 0: Introduction to Modern `R`](https://singmann.github.io/mixed_model_workshop_2day/part0-introduction/introduction.html)
+- [Part 1: Statistical Modeling in R](https://singmann.github.io/mixed_model_workshop_2day/part1-statistical-modeling-in-r/statistical_modeling.html)
+- [Part 2: Mixed Models in R](https://singmann.github.io/mixed_model_workshop_2day/part2-mixed-models-in-r/mixed_models.html)
 
 In addition, the repo contains a [`pdf` handout](https://github.com/singmann/mixed_model_workshop_2day/raw/master/handout/mixed_model_handout.pdf) providing a concise overview. 
 
