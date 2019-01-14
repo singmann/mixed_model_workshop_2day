@@ -12,18 +12,19 @@ Read the chapter to get a more comprehensive overview.
 
 The repo currently contains three `html` presentations:
 
-- [Part 0: Introduction to Modern `R`](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop/blob/master/part0-introduction/introduction.html)
-- [Part 1: Statistical Modeling in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop/blob/master/part1-statistical-modeling-in-r/statistical_modeling.html)
-- [Part 2: Mixed Models in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop/blob/master/part2-mixed-models-in-r/mixed_models.html)
+- [Part 0: Introduction to Modern `R`](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part0-introduction/introduction.html)
+- [Part 1: Statistical Modeling in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part1-statistical-modeling-in-r/statistical_modeling.html)
+- [Part 2: Mixed Models in R](https://htmlpreview.github.io/?https://github.com/singmann/mixed_model_workshop_2day/blob/master/part2-mixed-models-in-r/mixed_models.html)
 
-In addition, the repo contains a [`pdf` handout](https://github.com/singmann/mixed_model_workshop/raw/master/handout/mixed_model_handout.pdf) providing a concise overview. 
+In addition, the repo contains a [`pdf` handout](https://github.com/singmann/mixed_model_workshop_2day/raw/master/handout/mixed_model_handout.pdf) providing a concise overview. 
 
 ### Requirements
-- A recent version of `R` (currently `R 3.5.1`): `https://cran.rstudio.com/`
+- A recent version of `R` (currently `R 3.5.2`): `https://cran.rstudio.com/`
 - `R` packages necessary for the analysis (install with `install.packages("package")` at `R` prompt): `afex` (which automatically installs the additional requirements `emmeans`, `lme4`, and `car`) and `psych` and `MEMSS` (for example data)
 - `R` package `tidyverse` as well as `broom` for the exercises (we mainly need `dplyr`, `broom`, `tidyr`, `purrr`, and `ggplot2`).
 - `R` package `xaringan` to compile the slides.
-- `R` package `sjstats` for Intraclass Correlation Coefficient (ICC)
+- `R` package `sjstats` for Intraclass Correlation Coefficient (ICC).
+- `R` package `GGally` for some plots.
 - Possibly `R` packages `sjPlot` and `MuMIn` for some examples.
 - A html 5 compatible browser to view the slides.
 - `RStudio`: https://www.rstudio.com/products/rstudio/download3/#download
