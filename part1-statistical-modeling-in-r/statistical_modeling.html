@@ -1838,7 +1838,7 @@ class: inline-grey
 
 - Three approaches for dealing with repeated-measures (e.g., Gelman &amp; Hill, 2007):
   1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
-  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  2. *No pooling*: Two step procedure. 1. Separate data based on factor producing dependency and calculate separate statistical model for each subset. 2. Analysis of distribution of estimates from step 1. (Prone to overfitting which decreases precision of parameter estimates; estimation error accumulates in step 2; combination and analysis of individual estimates can be non-trivial if interest is in more than 1 parameter)
   3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
 
 ---
@@ -2142,7 +2142,7 @@ class: center, middle, inverse
 
 - Three approaches for dealing with repeated-measures (e.g., Gelman &amp; Hill, 2007):
   1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
-  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  2. *No pooling*: Two step procedure. 1. Separate data based on factor producing dependency and calculate separate statistical model for each subset. 2. Analysis of distribution of estimates from step 1. (Prone to overfitting which decreases precision of parameter estimates; estimation error accumulates in step 2; combination and analysis of ind
   3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
 
 
