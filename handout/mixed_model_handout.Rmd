@@ -1,7 +1,7 @@
 ---
 title: "Mixed Models in R - A Practical Introduction"
 author: "Henrik Singmann"
-date: "November 2018"
+date: "January 2018"
 output: pdf_document
 ---
 
@@ -12,17 +12,22 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Overview: Statistical Models in R
 
 1. Identify probability distribution of data (more correct: of conditional distribution of the response)
+    - pass appropriate distribution via `family` argument for GLMs/GLMMs
 2. Make sure variables are of correct type via `str()`
 3. Set appropriate contrasts (orthogonal contrasts if model includes interaction): `afex::set_sum_contrasts()`
 4. Describe statistical model using `formula`
+    - For mixed models: Identify maximal random-effects structure justified by design.
 4. Fit model: pass `formula` and `data.frame` to corresponding modeling function (e.g., `lm()`, `glm()`)
-4. Check model fit (e.g., inspect residuals)
+4. Check model fit (e.g., inspect residuals) and model adequacy (i.e., for GLMs/GLMMs)
+    - If mixed model shows singular fit, iteratively reduce random-effects structure.
+    - For GLMs/GLMMs: R package `DHARMa`: https://cran.r-project.org/package=DHARMa
 5. Test terms (i.e., main effects and interactions): Pass fitted model to `car::Anova()`
 7. Follow-up tests: 
     - Estimated marginal means: Pass fitted model to `emmeans::emmeans()`
     - Specify specific contrasts on estimated marginal means (e.g., `contrast()`, `pairs()`)
+    - Tests of simple effects via `test()` or after splitting data.
    
-- `afex` combines fitting (5.) and testing (7.):
+- `afex` combines correct coding (3.), fitting (5.) and testing (7.):
     - ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
     - (Generalized) linear mixed-effects models: `afex::mixed()`
 
@@ -53,6 +58,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 - For models with only numerical covariates, suppressing intercept works as expected.
 - For models with categorical covariates, suppressing intercept or other lower-order effects often leads to very surprising results (and should generally be avoided).
+- For models involving factors with more than two levels, **avoid inspecting parameter estimates** (i.e., avoid `summary()` or `coef()`). 
+    - Parameter estimates are only meaningful for factors with two levels.
+    - Use `car::Anova()` or `afex` for estimating model and testing terms
+    - Use `emmeans` for inspection of results on factor-levels and design cells
 
 ### Tests of Model Terms/Effects with `car::Anova()`
 - `car::Anova(model, type = 3)` general solution for testing effects.
@@ -63,6 +72,7 @@ knitr::opts_chunk$set(echo = TRUE)
 - Type II are more appropriate if imbalance is structural (i.e., observational data).
 
 ### Follow-Up Tests
+- Make many plots to understand interactions (e.g., using `afex_plot()`)
 - Choice of follow-up test after significant interactions based on research questions
     - Simple effects (e.g., main effect of one factor conditional on other factor[s])
     - Comparison of specific cell means

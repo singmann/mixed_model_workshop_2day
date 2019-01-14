@@ -288,8 +288,8 @@ class: inline-grey
 ## Interim Summary: Linear and Multiple Regression
 
 - Linear regression summarizes linear relationship with regression parameters, allows prediction
-    - Intercept ($b_0$ or $/beta_0$): expected value of DV at origin of IVs (i.e., when IVs are 0)
-    - Slopes (e.g., $b_1$ or $/beta_1$): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
+    - Intercept (usually $b_0$ or $\beta_0$): expected value of DV at origin of IVs (i.e., when IVs are 0)
+    - Slopes (e.g., $b_1$ or $\beta_1$): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
 - Linear transformation of variables does not change significance of slope or adequacy of model
     - transformation can simplify interpretation of estimates and comparison across scales
     - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
@@ -600,7 +600,8 @@ options(op)
 class: small
 
 # R and Categorical Covariates
-`model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+- `model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+- `model.matrix()` is called internally by `lm` and other modeling functions and creates numerical IVs (i.e., $X$ in regression equation) and usually does not need to be called by user.
 
 .pull-left[
 ```{r}
@@ -612,7 +613,8 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 class: small
 # R and Categorical Covariates
 
-`model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+- `model.matrix()` transforms categorical covariates into numerical variables that can be used for fitting using a specific contrast function (see `?contr.sum`).
+- `model.matrix()` is called internally by `lm` and other modeling functions and creates numerical IVs (i.e., $X$ in regression equation) and usually does not need to be called by user.
 
 .pull-left[
 ```{r}
@@ -925,34 +927,6 @@ contrast(emms, cs, adjust = "holm")
 ```
 ]
 
-
----
-class: inline-grey
-# Beyond Linear Models with Normal Residual Distribution
-
-Statistical models defined by relationship of covariates and assumption of residual probability distribution. `formula` defines the relationship of covariates, `function` defines distributional assumption.
-
-
-- (1) Most models assume independent data points (i.e., no replicates or repeated measures):  
-- `lm()` linear model (normal distribution of residuals, includes multivariate IVs)
-- `glm()` generalized linear model (other residual distribution, e.g., binomial, Poisson)
-- `MASS::rlm()` robust linear model
-- `MASS::polr()` ordered logistic or probit regression
-- `MASS::loglm()` log-linear model (for contingency tables)
-- `nnet::multinom()` models for multinomial data
-- `ordinal::clm()` cumulative link models for ordinal data
-
-
-- (2) Models support repeated-measures usually via random-effects parameters:
-- `nlme::lme()` linear mixed-effects models (generally superseded by `lme4`)
-- `lme4::lmer()` linear mixed-effects models (modern implementation)
-- `lme4::glmer()` generalized linear mixed-effects models
-- `ordinal::clmm2()` cumulative link mixed models for ordinal data
-- `mcmcGLMM` Bayesian generalized linear mixed-effects models
-- `rstanarm::stan_lmer()`/`stan_glmer()` **Bayesian (generalized) linear mixed-effects models**
-- `brms::brm()` **general framework for formula-based Bayesian models; extremely flexible**
-
-
 ---
 class: inline-grey
 # Summary: Analysis with Statistical Models in R
@@ -1042,6 +1016,49 @@ emmeans(a2, c("education")) %>% pairs
 ]
 
 ---
+
+# Working with Categorical Covariates
+
+- When you can, avoid inspecting parameters (i.e., avoid `summary()` or `coef()`)
+    - Parameter estimates are only meaningful for factors with two levels.
+    - Use `car::Anova()` or `afex` for estimating model and testing terms
+    - Use `emmeans` for inspection of results on factor-levels and design cells
+- When models involve categorical variables and interactions, do not forget appropriate contrasts: `afex::set_sum_contrasts()`
+    - Lower-order effects (coefficients and Type 3 tests) are evaluated at the origin of other variables.
+    - `afex` always uses appropriate contrasts per default (without need for setting)
+- Use Type III tests for experimental designs and Type II tests for observational data
+    - Both only differ for unbalanced data; in the way how unbalance is treated
+- Make many plots to understand interactions
+    - Be careful when interpreting main effects in light of interactions
+
+---
+class: inline-grey
+# Beyond Linear Models with Normal Residual Distribution
+
+Statistical models defined by relationship of covariates and assumption of residual probability distribution. `formula` defines the relationship of covariates, `function` defines distributional assumption.
+
+
+- (1) Most models assume independent data points (i.e., no replicates or repeated measures):  
+- `lm()` linear model (normal distribution of residuals, includes multivariate IVs)
+- `glm()` generalized linear model (other residual distribution, e.g., binomial, Poisson)
+- `MASS::rlm()` robust linear model
+- `MASS::polr()` ordered logistic or probit regression
+- `MASS::loglm()` log-linear model (for contingency tables)
+- `nnet::multinom()` models for multinomial data
+- `ordinal::clm()` cumulative link models for ordinal data
+
+
+- (2) Models support repeated-measures usually via random-effects parameters:
+- `nlme::lme()` linear mixed-effects models (generally superseded by `lme4`)
+- `lme4::lmer()` linear mixed-effects models (modern implementation)
+- `lme4::glmer()` generalized linear mixed-effects models
+- `ordinal::clmm2()` cumulative link mixed models for ordinal data
+- `mcmcGLMM` Bayesian generalized linear mixed-effects models
+- `rstanarm::stan_lmer()`/`stan_glmer()` **Bayesian (generalized) linear mixed-effects models**
+- `brms::brm()` **general framework for formula-based Bayesian models; extremely flexible**
+
+
+---
 class: center, middle, inverse
 
 # Repeated-Measures
@@ -1061,7 +1078,7 @@ class: inline-grey
 
 - Three approaches for dealing with repeated-measures (e.g., Gelman & Hill, 2007):
   1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
-  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  2. *No pooling*: Two step procedure. 1. Separate data based on factor producing dependency and calculate separate statistical model for each subset. 2. Analysis of distribution of estimates from step 1. (Prone to overfitting which decreases precision of parameter estimates; estimation error accumulates in step 2; combination and analysis of individual estimates can be non-trivial if interest is in more than 1 parameter)
   3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
 
 ---
@@ -1222,7 +1239,7 @@ pairs(emmeans(mmach, "Machine"),
 ---
 class: small
 
-# Example Data 2
+# Example Data 2 (Exercise)
 
 ![](cognition_cutout.png)
 
@@ -1230,18 +1247,18 @@ class: small
 ---
 class: small, inline-grey
 
-### Skovgaard-Olsen et al. (2016)
-
+- **Skovgaard-Olsen et al. (2016)**
 - Conditional = *if-then* statement; e.g., If global warning continues, London will be flooded.
 - Bayesian reasoning often assumes 'the Equation': *P*(if *A* then *B*) = *P*(*B*|*A*)
 - Our question: Does 'the Equation' hold? 
 - Participants provide idiosyncratic estimates of both *P*(if *A* then *B*) and *P*(*B*|*A*).
-
 - ~100 participants recruited via `crowdflower.com` worked on 12 items:
+
 
 > Sophia's scenario: Sophia wishes to find a nice present for her 13-year-old son, Tim, for Christmas. She is running on a tight budget, but she knows that Tim loves participating in live role-playing in the forest and she is really skilled at sewing the orc costumes he needs. Unfortunately, she will not be able to afford the leather parts that such costumes usually have, but she will still be able to make them look nice.
 
 --
+
 
 (1) *P*(*B*|*A*) (`B_given_A`):
   > Suppose Sophia makes Tim an orc costume.
@@ -1250,137 +1267,16 @@ class: small, inline-grey
 
 --
 
+
 (2) *P*(if *A* then *B*) (`if_A_then_B`):
   > Could you please rate the probability that the following sentence is true:   
   > IF Sophia makes Tim an orc costume, THEN he will be excited about his present.
 
----
-
-class: small 
-
-.pull-left[
-### Skovgaard-Olsen et al. (2016)
-
-- Does 'the Equation' (i.e., *P*(if *A* then *B*) = *P*(*B*|*A*)) hold? 
-
-- Participants provided idiosyncratic estimates of *P*(if *A* then *B*) (`if_A_then_B`) and *P*(*B*|*A*) (`B_given_A`) for each item.
-- Each participant worked on 12 items.
-
-
-```{r}
-# Session -> Set Working Directory ->
-# -> To Source File Location
-load("ssk16_dat_tutorial.rda") 
-# full data: https://osf.io/j4swp/
-str(dat, width=50, strict.width = "cut")
-```
-
-]
-
-.pull-right[
-
-```{r, fig.height=6, dev='svg'}
-ggplot(data = dat) + 
-  geom_point(mapping = aes(x = B_given_A, 
-                           y = if_A_then_B), 
-             alpha = 0.2, pch = 16, size = 3) + 
-  coord_fixed() +
-  theme_light() +
-  theme(text = element_text(size=20))
-
-```
-
-]
-
----
-class: small
-
-.pull-left[
-
-### Skovgaard-Olsen et al. (2016): Complete Pooling
-
-(1) Overall
-
-```{r}
-m1 <- lm(if_A_then_B~B_given_A, dat)
-broom::tidy(m1)
-```
-
-
-]
-
 --
 
-.pull-right[
-
-(2) By-Participant
-
-```{r}
-dat_p <- dat %>% 
-  group_by(p_id) %>% 
-  summarise_if(is.numeric, mean)
-  
-m2 <- lm(if_A_then_B~B_given_A, dat_p)
-broom::tidy(m2)
-```
-
-
-(3) By-Item
-
-```{r}
-dat_i <- dat %>% 
-  group_by(i_id) %>% 
-  summarise_if(is.numeric, mean)
-  
-m3 <- lm(if_A_then_B~B_given_A, dat_i)
-broom::tidy(m3)
-```
-
-]
-
----
-
-### Skovgaard-Olsen et al. (2016): No Pooling (By-Participant) I
-
-
-```{r}
-no_pooling_estimates <- dat %>% 
-  group_by(p_id) %>% 
-  do(broom::tidy(lm(if_A_then_B ~ B_given_A, .)))
-## see: https://stackoverflow.com/a/30015869/289572
-
-no_pooling_estimates
-```
-
----
-class: small
-
-### Skovgaard-Olsen et al. (2016): No Pooling (By-Participant) II
-
-.pull-left[
-```{r, fig.height=5, dev='svg'}
-slopes <- no_pooling_estimates %>% 
-  filter(term == "B_given_A")
-
-ggplot(slopes, aes(estimate)) +
-  geom_histogram(bins = 35) +
-  theme_light() +
-  theme(text = element_text(size=20))
-
-```
-
-]
---
-
-.pull-right[
-```{r}
-m_no <- lm(estimate ~ 1, slopes)
-car::Anova(m_no, type = 3)
-broom::tidy(m_no)
-
-```
-
-]
+- Exercise 1: Analyse the data using the no-pooling approach: `exercises/exercise_1_P.Rmd`
+- Calculate regression between *P*(if *A* then *B*) and *P*(*B*|*A*) separately for each participant.
+- Do results suggest an overall relationship between the two variables? If so, how strong?
 
 ---
 class: center, middle, inverse
@@ -1398,7 +1294,7 @@ class: center, middle, inverse
 
 - Three approaches for dealing with repeated-measures (e.g., Gelman & Hill, 2007):
   1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
-  2. *No pooling*: Separate data based on factor producing dependency and calculate separate statistical model for each subset (individual-level parameters prone to overfitting, combining results can be non-trivial)
+  2. *No pooling*: Two step procedure. 1. Separate data based on factor producing dependency and calculate separate statistical model for each subset. 2. Analysis of distribution of estimates from step 1. (Prone to overfitting which decreases precision of parameter estimates; estimation error accumulates in step 2; combination and analysis of ind
   3. *Partial pooling*: Analyse data jointly while taking dependency into account (gold standard, e.g., mixed models, hierarchical models)
 
 
