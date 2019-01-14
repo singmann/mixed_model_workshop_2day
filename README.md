@@ -55,7 +55,7 @@ Participants of the workshop need some basic knowledge of R. For example, they s
 
 ---
 
-Last edited: June 2018
+Last edited: January 2019
 
 ---
 
