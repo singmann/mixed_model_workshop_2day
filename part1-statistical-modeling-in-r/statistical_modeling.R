@@ -16,21 +16,14 @@ sat.act$education <- factor(sat.act$education)
 summary(sat.act) # alternatively: psych::describe(sat.act)
 sat.act <- na.omit(sat.act)
 
-## ---- fig.height=4, dev='svg'--------------------------------------------
-par(mfrow=c(1,2))
-plot(sat.act$SATV, sat.act$ACT)
-plot(sat.act$SATQ, sat.act$ACT)
-
-## ---- fig.height=3.5, fig.width=3.5, dev='svg', results='hide', message=FALSE, include=FALSE, eval=FALSE----
-## library("tidyverse")
-## ggplot(sat.act, aes(x = ACT, y = SATV)) +
-##   geom_point() +
-##   theme_light()
-
-## ---- fig.height=3.5, fig.width=3.5, dev='svg', include=FALSE, eval=FALSE----
-## ggplot(sat.act, aes(x = ACT, y = SATQ)) +
-##   geom_point() +
-##   theme_light()
+## ---- fig.height=3.5, fig.width= 7, dev='svg', message=FALSE-------------
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+sat2 <- sat.act %>% 
+  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
+ggplot(sat2, aes(x = sat_value, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  facet_wrap(~ sat_type)
 
 ## ------------------------------------------------------------------------
 m1 <- lm(ACT ~ SATQ, sat.act)
@@ -39,9 +32,12 @@ summary(m1)
 ## ------------------------------------------------------------------------
 coef(m1)
 
-## ---- fig.height=3.7, fig.width=4, dev='svg'-----------------------------
-plot(sat.act$SATQ, sat.act$ACT)
-abline(m1)
+## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
+ggplot(sat.act, 
+       aes(x = SATQ, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
 
 ## ------------------------------------------------------------------------
 sat.act$SATQ_c <- sat.act$SATQ - mean(sat.act$SATQ)
@@ -52,9 +48,137 @@ summary(m2)
 ## ------------------------------------------------------------------------
 coef(m2)
 
-## ---- fig.height=3.7, fig.width=4, dev='svg'-----------------------------
-plot(sat.act$SATQ_c, sat.act$ACT)
-abline(m2)
+## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
+ggplot(sat.act, 
+       aes(x = SATQ_c, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
+
+## ------------------------------------------------------------------------
+m2b <- lm(ACT ~ scale(SATQ), sat.act)
+summary(m2b)
+
+## ------------------------------------------------------------------------
+coef(m2b)
+
+## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
+ggplot(sat.act, 
+       aes(x = scale(SATQ), 
+           y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
+
+## ---- fig.height=5.5, fig.width=5.5, dev='svg'---------------------------
+GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+
+## ------------------------------------------------------------------------
+m3 <- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+summary(m3)
+
+## ------------------------------------------------------------------------
+## Full Model
+summary(m3)$coefficients %>% zapsmall(6)
+
+## ------------------------------------------------------------------------
+## SATQ
+m3_q <- lm(SATQ_c ~ SATV_c, sat.act)
+sat.act$resid_q <- residuals(m3_q)
+summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+
+## ------------------------------------------------------------------------
+## SATV
+m3_v <- lm(SATV_c ~ SATQ_c, sat.act)
+sat.act$resid_v <- residuals(m3_v)
+summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+
+## ------------------------------------------------------------------------
+data("Prestige", package = "carData")
+glimpse(Prestige, width = 50)
+
+## ---- fig.width=5, fig.height=5, dev='svg'-------------------------------
+GGally::ggscatmat(Prestige, 
+                  columns = c(1, 4, 2))
+
+## ------------------------------------------------------------------------
+mp_1 <- lm(income ~ education + prestige, Prestige)
+summary(mp_1)
+
+## ------------------------------------------------------------------------
+mp_1b <- lm(income ~ scale(education) + scale(prestige), Prestige)
+summary(mp_1b)
+
+## ------------------------------------------------------------------------
+mp_3 <- lm(income ~ scale(education)*scale(prestige), Prestige)
+summary(mp_3)
+
+## ------------------------------------------------------------------------
+library("emmeans")
+get_z_positions <- function(x, at = c(-1, 0, 1), round = 2) {
+  return(round(mean(x) + at*sd(x), round))
+}
+pres_t <- emtrends(mp_3, specs = "education", var = "prestige", 
+                   at = list(education = get_z_positions(Prestige$education))) %>% summary
+
+## ------------------------------------------------------------------------
+pres_t
+pres_t$prestige.trend * sd(Prestige$prestige)
+
+## ------------------------------------------------------------------------
+summary(mp_3)$coefficients %>% zapsmall
+
+## ------------------------------------------------------------------------
+edu_t <- emtrends(mp_3, specs = "prestige", var = "education", 
+                  at = list(prestige = get_z_positions(Prestige$prestige)))  %>% summary
+
+edu_t
+
+## ------------------------------------------------------------------------
+edu_t$education.trend * 
+  sd(Prestige$education)
+
+## ------------------------------------------------------------------------
+summary(mp_3)$coefficients %>% zapsmall
+
+## ------------------------------------------------------------------------
+Prestige <- Prestige %>% 
+  mutate(edu_cat = cut(education, 3, labels = c("low", "medium", "high")),
+         prestige_cat = cut(prestige, 3, labels = c("low", "medium", "high"))
+         )
+
+## ---- include=FALSE, eval=FALSE------------------------------------------
+## ## Alternatively, create unequal size groups based on theoretical quantiles.
+## Prestige <- Prestige %>%
+##   mutate(edu_cat = cut(education,
+##                        breaks = c(
+##                          0,
+##                          get_z_positions(education,
+##                                          at = c(qnorm(.333), qnorm(.666))),
+##                          Inf),
+##                        labels = c("low", "medium", "high")),
+##          prestige_cat = cut(prestige,
+##                        breaks = c(
+##                          0,
+##                          get_z_positions(prestige,
+##                                          at = c(qnorm(.333), qnorm(.666))),
+##                          Inf),
+##                        labels = c("low", "medium", "high"))
+##          )
+
+## ---- fig.width=4.5, fig.height=4.5, dev='svg', echo=FALSE---------------
+ggplot(Prestige, aes(x = prestige, y = income, 
+                     color = edu_cat, shape = edu_cat)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "bottom")
+
+## ---- fig.width=4.5, fig.height=4.5, dev='svg', echo=FALSE---------------
+ggplot(Prestige, aes(x = education, y = income, 
+                     color = prestige_cat, shape = prestige_cat)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "bottom")
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
@@ -258,16 +382,26 @@ library("afex")
 sat.act$id <- factor(1:nrow(sat.act))
 (a1 <- aov_car(ACT ~ gender+Error(id), sat.act))
 
+## ------------------------------------------------------------------------
+(a2 <- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
 
 ## ------------------------------------------------------------------------
-sat_long <- tidyr::gather(
-  sat.act, key = "SAT_type", 
-  value = "SAT_value", SATV, SATQ)
+(a2 <- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
 
-## ---- message=FALSE, comment='#'-----------------------------------------
-(a2 <- aov_car(SAT_value ~ gender*SAT_type+
-                 Error(id/SAT_type), sat_long))
-emmeans(a2, c("gender", "SAT_type"))
+## ---- fig.width=4.5, fig.height=4.5, dev='svg'---------------------------
+afex_plot(a2, "education", "gender",
+          data_geom = geom_violin, 
+          data_arg = list(width = 0.4)) +
+  theme(legend.position = "bottom")
+
+
+## ------------------------------------------------------------------------
+emmeans(a2, "gender")
+
+## ------------------------------------------------------------------------
+emmeans(a2, c("education")) %>% pairs
 
 ## ------------------------------------------------------------------------
 data("Machines", package = "MEMSS")
@@ -324,65 +458,4 @@ pairs(emmeans(a1, "Machine"),
 ## ------------------------------------------------------------------------
 pairs(emmeans(mmach, "Machine"), 
       adjust = "holm")  ## no pooling results
-
-## ------------------------------------------------------------------------
-# Session -> Set Working Directory ->
-# -> To Source File Location
-load("ssk16_dat_tutorial.rda") 
-# full data: https://osf.io/j4swp/
-str(dat, width=50, strict.width = "cut")
-
-## ---- fig.height=6, dev='svg'--------------------------------------------
-ggplot(data = dat) + 
-  geom_point(mapping = aes(x = B_given_A, 
-                           y = if_A_then_B), 
-             alpha = 0.2, pch = 16, size = 3) + 
-  coord_fixed() +
-  theme_light() +
-  theme(text = element_text(size=20))
-
-
-## ------------------------------------------------------------------------
-m1 <- lm(if_A_then_B~B_given_A, dat)
-broom::tidy(m1)
-
-## ------------------------------------------------------------------------
-dat_p <- dat %>% 
-  group_by(p_id) %>% 
-  summarise_if(is.numeric, mean)
-  
-m2 <- lm(if_A_then_B~B_given_A, dat_p)
-broom::tidy(m2)
-
-## ------------------------------------------------------------------------
-dat_i <- dat %>% 
-  group_by(i_id) %>% 
-  summarise_if(is.numeric, mean)
-  
-m3 <- lm(if_A_then_B~B_given_A, dat_i)
-broom::tidy(m3)
-
-## ------------------------------------------------------------------------
-no_pooling_estimates <- dat %>% 
-  group_by(p_id) %>% 
-  do(broom::tidy(lm(if_A_then_B ~ B_given_A, .)))
-## see: https://stackoverflow.com/a/30015869/289572
-
-no_pooling_estimates
-
-## ---- fig.height=5, dev='svg'--------------------------------------------
-slopes <- no_pooling_estimates %>% 
-  filter(term == "B_given_A")
-
-ggplot(slopes, aes(estimate)) +
-  geom_histogram(bins = 35) +
-  theme_light() +
-  theme(text = element_text(size=20))
-
-
-## ------------------------------------------------------------------------
-m_no <- lm(estimate ~ 1, slopes)
-car::Anova(m_no, type = 3)
-broom::tidy(m_no)
-
 
