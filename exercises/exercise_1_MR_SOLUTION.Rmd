@@ -1,0 +1,113 @@
+---
+title: "Exercise 1: Multiple Regression SOLUTION"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+## Violent Crime Rates by US State
+
+The data set `USArrests` contains statistics, in arrests per 100,000 residents for assault, murder, and rape in each of the 50 US states in 1973. Also given is the percent of the population living in urban areas.
+
+
+Research question: *Which variables predict murder rates and to what degree?* 
+
+### Design
+
+The data comes with `R`, so we can load it right away. But at first, we load the `tidyverse` package, because these are the functions we want to use throughout this exercise.
+
+```{r, message=FALSE, results='markup'}
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+data(USArrests)  
+glimpse(USArrests)
+```
+
+The `data.frame` has 50 observations (one for each state) on 4 variables. The columns in the data are:
+
+- `Murder`: Murder arrests (per 100,000)
+- `Assault`: Assault arrests (per 100,000)
+- `UrbanPop`: Percent urban population
+- `Rape`: Rape arrests (per 100,000)
+
+Several of the variables show correlations among each other.
+
+```{r, fig.width=5, fig.height=5}
+GGally::ggscatmat(USArrests)
+```
+
+When looking at the zero-order correlation displayed in the upper-triangle of the pairs plot, we see that both, `Assault` and `Rape` appear to predict murder rates.
+
+## Exercise 1: Simple Linear Models
+
+Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable. 
+
+Which of the three variables shows a significant effect on murder rates?
+
+### Solution
+
+```{r}
+ma <- lm(Murder ~ Assault, USArrests)
+summary(ma)
+```
+
+```{r}
+mu <- lm(Murder ~ UrbanPop, USArrests)
+summary(mu)
+```
+
+```{r}
+mr <- lm(Murder ~ Rape, USArrests)
+summary(mr)
+```
+
+As expected from the pairs plot, assault and rape rates are significant predictors for murder rates, but not the percentage of urban population. The latter effect is positive, but small.
+
+## Exercise 2: Multiple Regression
+
+Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
+
+Which of the three variables now shows a significant effect on murder rates? If there are differences, how can these differences be explained?
+
+### Solution
+
+```{r}
+mall <- lm(Murder ~ Assault + UrbanPop + Rape, data = USArrests)
+summary(mall)
+```
+
+When adding all three variables to a model, only assault rates are a significant predictor for murder rates. Rape is now clearly non-significant. 
+
+We can see how this happens when reproducing both values via the residuals. We begin with the assault rates.
+
+The zero-order effect is similar to the final effect.
+```{r}
+summary(ma)$coefficients %>% zapsmall
+```
+
+We can then predict the assault rates from the other two IVs. If we use the resulting residuals as a predictor for murder rates we recreate the value from the final model.
+
+```{r}
+ma_r <- lm(Assault ~ Rape + UrbanPop, data = USArrests)
+USArrests$resid_a <- residuals(ma_r)
+summary(lm(Murder ~ 0 + resid_a, USArrests))$coefficients %>% round(4)
+```
+
+For rape rates, we see a different pattern. The zero-order effect is considerably larger as the final effect.
+```{r}
+summary(mr)$coefficients %>% zapsmall
+mr_r <- lm(Rape ~ Assault + UrbanPop, data = USArrests)
+USArrests$resid_r <- residuals(mr_r)
+summary(lm(Murder ~ 0 + resid_r, USArrests))$coefficients %>% round(4)
+```
+
+Assault rates and murder rates show a high degree of [*multicollinearity*](http://en.wikipedia.org/wiki/Multicollinearity). Both are correlated with murder rates, but also with each other. This is never good and can lead to many problems in statistical models. Here one general conclusion is still possible: **Whatever is causing murder rates, assault rates tap into this better.** 
+
+Interestingly, the effect of the percentage of urban population in the final approaches significance, and is now negative. This differs a bit from the zero-order model in which it was positive. Instead of multicollinearity we have here a type of **suppression effect**. Only when controlling for the effect of other violent crimes do we see that a higher percentage of urban population is associated with lower murder rates.
+
+The effects shown here are an example of interesting regression effects that can appear. For more on those see:
+
+- Suppression effects: https://stats.stackexchange.com/q/73869/442
+- More regression effects: https://stats.stackexchange.com/q/33888/442
+- Multicollinearity: https://stats.stackexchange.com/q/3549/442
+- Intuition about multicollinearity: https://stats.stackexchange.com/q/1149/442

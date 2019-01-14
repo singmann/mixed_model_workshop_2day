@@ -3,7 +3,7 @@
   <head>
     <title>Statistical Modeling in R</title>
     <meta charset="utf-8">
-    <meta name="author" content="Henrik Singmann (University of Zurich) Twitter: @HenrikSingmann" />
+    <meta name="author" content="Henrik Singmann (University of Warwick) Twitter: @HenrikSingmann" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
     <link rel="stylesheet" href="my-theme.css" type="text/css" />
@@ -14,8 +14,8 @@ class: center, middle, inverse, title-slide
 
 # Statistical Modeling in R
 ## The Basics
-### Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### July 2018
+### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
+### January 2019
 
 ---
 
@@ -39,7 +39,7 @@ class: inline-grey
    - Estimated marginal means: Pass fitted model to `emmeans::emmeans()` (formerly:`lsmeans::lsmeans()`)
    - Specify specific contrasts on estimated marginal means (e.g., `contrast()`, `pairs()`)
 
-`afex` combines fitting (5.) and testing (7.):
+`afex` combines correct coding (3.), fitting (5.) and testing (7.):
 - ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
 - (Generalized) linear mixed-effects models: `afex::mixed()`
 
@@ -112,25 +112,24 @@ sat.act &lt;- na.omit(sat.act)
 ```
 
 ---
-# Some Example Data
+class: small
+
+## Some Example Data
 
 
 
 ```r
-par(mfrow=c(1,2))
-plot(sat.act$SATV, sat.act$ACT)
-plot(sat.act$SATQ, sat.act$ACT)
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+sat2 &lt;- sat.act %&gt;% 
+  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
+ggplot(sat2, aes(x = sat_value, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  facet_wrap(~ sat_type)
 ```
 
 ![](statistical_modeling_files/figure-html/unnamed-chunk-2-1.svg)&lt;!-- --&gt;
 
-.pull-left[
-
-]
-
-.pull-right[
-
-]
 
 ---
 # Linear Regression Model
@@ -198,11 +197,14 @@ coef(m1)
 
 
 ```r
-plot(sat.act$SATQ, sat.act$ACT)
-abline(m1)
+ggplot(sat.act, 
+       aes(x = SATQ, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-7-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-5-1.svg)&lt;!-- --&gt;
 ]
 ---
 class: small
@@ -253,14 +255,470 @@ coef(m2)
 
 
 ```r
-plot(sat.act$SATQ_c, sat.act$ACT)
-abline(m2)
+ggplot(sat.act, 
+       aes(x = SATQ_c, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-10-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-8-1.svg)&lt;!-- --&gt;
+]
+
+---
+class: small
+
+# Linear Model in R (Scaled)
+
+.pull-left2[
+
+```r
+m2b &lt;- lm(ACT ~ scale(SATQ), sat.act)
+summary(m2b)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ scale(SATQ), data = sat.act)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -20.394  -2.573   0.267   2.267  16.511 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   28.550      0.149     191   &lt;2e-16 ***
+## scale(SATQ)    2.836      0.149      19   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.91 on 685 degrees of freedom
+## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
+## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+```
+
+- `scale()` calculates z-transformation (minus mean divided by SD) and can be used within formulas
+- **Warning:** `scale()` does not return vector but matrix
+
+]
+.pull-right2[
+
+```r
+coef(m2b)
+```
+
+```
+## (Intercept) scale(SATQ) 
+##      28.550       2.836
+```
+
+
+```r
+ggplot(sat.act, 
+       aes(x = scale(SATQ), 
+           y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-11-1.svg)&lt;!-- --&gt;
 ]
 ---
 
+
+```r
+GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-12-1.svg)&lt;!-- --&gt;
+
+---
+class: small
+
+### Multiple Regression
+
+
+```r
+m3 &lt;- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+summary(m3)
+```
+
+```
+## 
+## Call:
+## lm(formula = ACT ~ SATQ_c + SATV_c, data = sat.act)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -16.680  -2.308   0.083   2.192  18.549 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 28.55022    0.14280  199.93  &lt; 2e-16 ***
+## SATQ_c       0.01614    0.00162    9.99  &lt; 2e-16 ***
+## SATV_c       0.01328    0.00165    8.05  3.6e-15 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 3.74 on 684 degrees of freedom
+## Multiple R-squared:  0.401,	Adjusted R-squared:   0.4 
+## F-statistic:  229 on 2 and 684 DF,  p-value: &lt;2e-16
+```
+
+--
+- Why is estimate of `SATQ_c` reduced by 35% (was `0.02453`)?
+--
+
+- In multiple regression, parameter estimates reflect effect after "controlling" for influence of all other predictors!
+- What remains from a specific effect, if others variables are taken into account?
+
+
+---
+class: small
+
+### "Controlling"?
+
+
+```r
+## Full Model
+summary(m3)$coefficients %&gt;% zapsmall(6)
+```
+
+```
+##             Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)  28.5502     0.1428 199.928        0
+## SATQ_c        0.0161     0.0016   9.990        0
+## SATV_c        0.0133     0.0016   8.054        0
+```
+
+--
+
+
+```r
+## SATQ
+m3_q &lt;- lm(SATQ_c ~ SATV_c, sat.act)
+sat.act$resid_q &lt;- residuals(m3_q)
+summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+```
+
+```
+##         Estimate Std. Error t value Pr(&gt;|t|)
+## resid_q  0.01614    0.01249   1.292   0.1968
+```
+
+--
+
+
+```r
+## SATV
+m3_v &lt;- lm(SATV_c ~ SATQ_c, sat.act)
+sat.act$resid_v &lt;- residuals(m3_v)
+summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+```
+
+```
+##         Estimate Std. Error t value Pr(&gt;|t|)
+## resid_v  0.01328    0.01276   1.041   0.2982
+```
+
+---
+class: inline-grey
+
+### Exercise 1 (Multiple Regression)
+
+- Open `exercises/exercise_1_MR.Rmd` (or the exercise handout or  `exercises/exercise_1_MR.nb.html` for a nicer format of the instruction).
+- Follow text and try to solve two small tasks helping you to get comfortable with multiple regression.
+- The data comes with `R`, `data(USArrests)`, and contains statistics, in arrests per 100,000 residents, for assault, murder, and rape in each of the 50 US states in 1973. Also given is the percent of the population living in urban areas.
+- Research question: *Which variables predict murder rates and to what degree?* 
+- Exercise 1: Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable.
+    - Which of the three variables shows a significant effect on murder rates?
+- Exercise 2: Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
+    - Which of the three variables now shows a significant effect on murder rates? If there are differences, how can these differences be explained?
+
+---
+
+## Interim Summary: Linear and Multiple Regression
+
+- Linear regression summarizes linear relationship with regression parameters, allows prediction
+    - Intercept ($b_0$ or `\(/beta_0\)`): expected value of DV at origin of IVs (i.e., when IVs are 0)
+    - Slopes (e.g., `\(b_1\)` or `\(/beta_1\)`): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
+- Linear transformation of variables does not change significance of slope or adequacy of model
+    - transformation can simplify interpretation of estimates and comparison across scales
+    - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
+- Regression allows including several predictors
+- Potential problems **multicollinearity** (i.e., predictors correlated among each other)
+    - imprecise regression estimates
+    - increases standard errors
+    - Potentially suppression effects or other regression problems can occur.
+- Parameter estimates reflects unique contribution of each predictor (i.e., beyond what is explained by other variables or controlling for other variables)
+
+
+
+---
+.pull-left[
+### Income and Prestige
+
+
+```r
+data("Prestige", package = "carData")
+glimpse(Prestige, width = 50)
+```
+
+```
+## Observations: 102
+## Variables: 6
+## $ education &lt;dbl&gt; 13.11, 12.26, 12.77, 11.42,...
+## $ income    &lt;int&gt; 12351, 25879, 9271, 8865, 8...
+## $ women     &lt;dbl&gt; 11.16, 4.02, 15.70, 9.11, 1...
+## $ prestige  &lt;dbl&gt; 68.8, 69.1, 63.4, 56.8, 73....
+## $ census    &lt;int&gt; 1113, 1130, 1171, 1175, 211...
+## $ type      &lt;fct&gt; prof, prof, prof, prof, pro...
+```
+
+- Occupations in Canada in 1971
+- Each data point is one occupation
+
+
+- `income`: Average income of incumbents, dollars, in 1971. 
+- `education`: Average education of occupational incumbents, years, in 1971. 
+- `prestige`: Pineo-Porter prestige score for occupation, from a social survey conducted in the mid-1960s (from 0 to 100).
+
+]
+.pull-right[
+
+```r
+GGally::ggscatmat(Prestige, 
+                  columns = c(1, 4, 2))
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-18-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+
+
+```r
+mp_1 &lt;- lm(income ~ education + prestige, Prestige)
+summary(mp_1)
+```
+
+```
+## 
+## Call:
+## lm(formula = income ~ education + prestige, data = Prestige)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -6649  -1453    102   1234  14901 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   -714.7     1257.5   -0.57     0.57    
+## education     -169.6      207.0   -0.82     0.41    
+## prestige       199.3       32.8    6.07  2.4e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2990 on 99 degrees of freedom
+## Multiple R-squared:  0.514,	Adjusted R-squared:  0.505 
+## F-statistic: 52.4 on 2 and 99 DF,  p-value: 2.96e-16
+```
+
+---
+
+
+```r
+mp_1b &lt;- lm(income ~ scale(education) + scale(prestige), Prestige)
+summary(mp_1b)
+```
+
+```
+## 
+## Call:
+## lm(formula = income ~ scale(education) + scale(prestige), data = Prestige)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -6649  -1453    102   1234  14901 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)          6798        296   22.97  &lt; 2e-16 ***
+## scale(education)     -463        565   -0.82     0.41    
+## scale(prestige)      3429        565    6.07  2.4e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2990 on 99 degrees of freedom
+## Multiple R-squared:  0.514,	Adjusted R-squared:  0.505 
+## F-statistic: 52.4 on 2 and 99 DF,  p-value: 2.96e-16
+```
+
+---
+
+
+```r
+mp_3 &lt;- lm(income ~ scale(education)*scale(prestige), Prestige)
+summary(mp_3)
+```
+
+```
+## 
+## Call:
+## lm(formula = income ~ scale(education) * scale(prestige), data = Prestige)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+##  -7107  -1606    130   1036  15346 
+## 
+## Coefficients:
+##                                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)                          6143        400   15.36   &lt;2e-16 ***
+## scale(education)                     -596        555   -1.07     0.29    
+## scale(prestige)                      3215        559    5.75    1e-07 ***
+## scale(education):scale(prestige)      778        328    2.37     0.02 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2920 on 98 degrees of freedom
+## Multiple R-squared:  0.541,	Adjusted R-squared:  0.527 
+## F-statistic: 38.5 on 3 and 98 DF,  p-value: &lt;2e-16
+```
+
+
+---
+class: small
+
+- Interaction: Effect of one variable depends on value of another variable!
+- For interactions of continuous covariates, it is common to inspect effect conditional at mean and plus/minus 1 SD from mean (Cohen et al., 2002).
+
+
+```r
+library("emmeans")
+get_z_positions &lt;- function(x, at = c(-1, 0, 1), round = 2) {
+  return(round(mean(x) + at*sd(x), round))
+}
+pres_t &lt;- emtrends(mp_3, specs = "education", var = "prestige", 
+                   at = list(education = get_z_positions(Prestige$education))) %&gt;% summary
+```
+
+.pull-left[
+
+```r
+pres_t
+```
+
+```
+##  education prestige.trend    SE df lower.CL upper.CL
+##       8.01          141.7 40.25 98    61.78    221.5
+##      10.74          186.9 32.51 98   122.41    251.4
+##      13.47          232.2 34.95 98   162.82    301.6
+## 
+## Confidence level used: 0.95
+```
+
+```r
+pres_t$prestige.trend * sd(Prestige$prestige)
+```
+
+```
+## [1] 2437 3216 3995
+```
+
+]
+.pull-right[
+
+```r
+summary(mp_3)$coefficients %&gt;% zapsmall
+```
+
+```
+##                                  Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                          6143        400      15        0
+## scale(education)                     -596        555      -1        0
+## scale(prestige)                      3215        559       6        0
+## scale(education):scale(prestige)      778        328       2        0
+```
+
+]
+
+---
+
+- 2-way interaction always allows 2 interpretations: One variable is focal, other is conditioning variable.
+
+
+```r
+edu_t &lt;- emtrends(mp_3, specs = "prestige", var = "education", 
+                  at = list(prestige = get_z_positions(Prestige$prestige)))  %&gt;% summary
+
+edu_t
+```
+
+```
+##  prestige education.trend    SE df lower.CL upper.CL
+##     29.63          -503.7 246.5 98   -992.9    -14.5
+##     46.83          -218.5 203.4 98   -622.1    185.1
+##     64.04            66.9 225.6 98   -380.7    514.5
+## 
+## Confidence level used: 0.95
+```
+
+
+.pull-left[
+
+```r
+edu_t$education.trend * 
+  sd(Prestige$education)
+```
+
+```
+## [1] -1374.3  -596.2   182.4
+```
+]
+
+.pull-right[
+
+```r
+summary(mp_3)$coefficients %&gt;% zapsmall
+```
+
+```
+##                                  Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                          6143        400      15        0
+## scale(education)                     -596        555      -1        0
+## scale(prestige)                      3215        559       6        0
+## scale(education):scale(prestige)      778        328       2        0
+```
+
+]
+
+---
+class: small
+
+- Alternatively, we can inspect interaction by transforming one variable into numerical variable!
+
+
+```r
+Prestige &lt;- Prestige %&gt;% 
+  mutate(edu_cat = cut(education, 3, labels = c("low", "medium", "high")),
+         prestige_cat = cut(prestige, 3, labels = c("low", "medium", "high"))
+         )
+```
+
+
+
+
+.pull-left[
+![](statistical_modeling_files/figure-html/unnamed-chunk-30-1.svg)&lt;!-- --&gt;
+]
+.pull-right[
+![](statistical_modeling_files/figure-html/unnamed-chunk-31-1.svg)&lt;!-- --&gt;
+]
+
+---
 class: inline-grey
 # Formula Interface for Statistical Models: `~`
 
@@ -354,6 +812,21 @@ coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
 
 
 
+---
+
+### Interim Summary
+
+- A linear model attempts to describe data generating process of DV using IVs and distributional assumptions (e.g., normal residuals)
+    - R formula interface allows specification in symbolic form
+    - Regression equation allows predictions for arbitrary values of IVs
+- Linear transformation of variables affects interpretation of estimates, but not overall adequacy of model
+    - Multiple regression estimates coefficients while "controlling" for other IVs
+    - Multicollinearity might affect estimates and precision
+- Interactions test if effect of one variable depend on value of other variable (i.e., magnitude of effect of one variable changes conditional on value of other variable)
+    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two possibilities)
+    - If model involves interaction, estimates of lower order effects are effect if other variables are 0 (centring of variables often provides reasonable interpretation if interactions are involved)
+
+
 
 ---
 class: center, middle, inverse
@@ -374,7 +847,7 @@ str(sat.act) ## alternatively tibble::glimpse(sat.act)
 ```
 
 ```
-## 'data.frame':	687 obs. of  8 variables:
+## 'data.frame':	687 obs. of  10 variables:
 ##  $ gender   : Factor w/ 2 levels "male","female": 2 2 2 1 1 1 2 1 2 2 ...
 ##  $ education: Factor w/ 6 levels "0","1","2","3",..: 4 4 4 5 3 6 6 4 5 6 ...
 ##  $ age      : int  19 23 20 27 33 26 30 19 23 40 ...
@@ -383,6 +856,8 @@ str(sat.act) ## alternatively tibble::glimpse(sat.act)
 ##  $ SATQ     : int  500 500 470 520 550 640 500 560 600 800 ...
 ##  $ SATQ_c   : num  -110.2 -110.2 -140.2 -90.2 -60.2 ...
 ##  $ SATV_c   : num  -112.3 -12.3 -132.3 -62.3 -12.3 ...
+##  $ resid_q  : num  -36.3 -102.1 -53.2 -49.2 -52.1 ...
+##  $ resid_v  : num  -42.76 57.24 -43.82 -5.39 25.68 ...
 ##  - attr(*, "na.action")= 'omit' Named int  130 197 248 364 376 419 498 515 523 581 ...
 ##   ..- attr(*, "names")= chr  "31294" "32448" "33259" "35106" ...
 ```
@@ -1176,7 +1651,7 @@ class: inline-grey
 
 --
 
-`afex` combines fitting (5.) and testing (7.):
+`afex` combines correct coding (3.), fitting (5.) and testing (7.):
 - ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
 - (Generalized) linear mixed-effects models: `afex::mixed()`
 
@@ -1203,48 +1678,124 @@ sat.act$id &lt;- factor(1:nrow(sat.act))
 # ---
 # Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
+]
+--
+
+.pull-right[
 
 ```r
-sat_long &lt;- tidyr::gather(
-  sat.act, key = "SAT_type", 
-  value = "SAT_value", SATV, SATQ)
+(a2 &lt;- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
+```
+
+```
+## Anova Table (Type 3 tests)
+## 
+## Response: ACT
+##             Effect     df   MSE        F  ges p.value
+## 1           gender 1, 675 22.60     1.13 .002     .29
+## 2        education 5, 675 22.60 4.80 ***  .03   .0003
+## 3 gender:education 5, 675 22.60     1.78  .01     .11
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+```
+]
+
+---
+
+## Plotting with `afex_plot`
+
+.pull-left[
+
+```r
+(a2 &lt;- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
+```
+
+```
+## Anova Table (Type 3 tests)
+## 
+## Response: ACT
+##             Effect     df   MSE        F  ges p.value
+## 1           gender 1, 675 22.60     1.13 .002     .29
+## 2        education 5, 675 22.60 4.80 ***  .03   .0003
+## 3 gender:education 5, 675 22.60     1.78  .01     .11
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+```
+
+for more see: https://singmann.github.io/afex_plot_introduction.html
+
+]
+.pull-right[
+
+```r
+afex_plot(a2, "education", "gender",
+          data_geom = geom_violin, 
+          data_arg = list(width = 0.4)) +
+  theme(legend.position = "bottom")
+```
+
+![](statistical_modeling_files/figure-html/unnamed-chunk-78-1.svg)&lt;!-- --&gt;
+]
+
+---
+
+### Follow-Up Tests with `afex`
+
+- `afex` provides full support for `emmeans`
+
+.pull-left[
+
+```r
+emmeans(a2, "gender")
+```
+
+```
+## NOTE: Results may be misleading due to involvement in interactions
+```
+
+```
+##  gender emmean     SE  df lower.CL upper.CL
+##  male    28.45 0.3428 675    27.78    29.12
+##  female  27.96 0.3107 675    27.35    28.57
+## 
+## Results are averaged over the levels of: education 
+## Confidence level used: 0.95
 ```
 
 ]
 
---
 .pull-right[
 
-
 ```r
-(a2 &lt;- aov_car(SAT_value ~ gender*SAT_type+
-                 Error(id/SAT_type), sat_long))
+emmeans(a2, c("education")) %&gt;% pairs
 ```
 
 ```
-# Anova Table (Type 3 tests)
-# 
-# Response: SAT_value
-#            Effect     df      MSE         F   ges p.value
-# 1          gender 1, 685 21348.07   7.34 **  .009    .007
-# 2        SAT_type 1, 685  4527.32      0.60 .0002     .44
-# 3 gender:SAT_type 1, 685  4527.32 21.54 ***  .005  &lt;.0001
-# ---
-# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
-```
-
-```r
-emmeans(a2, c("gender", "SAT_type"))
+## NOTE: Results may be misleading due to involvement in interactions
 ```
 
 ```
-#  gender SAT_type emmean    SE     df lower.CL upper.CL
-#  male   SATV      612.2 6.458 1045.7    599.5    624.8
-#  female SATV      607.5 6.131  895.9    595.4    619.5
-#  male   SATQ      632.7 6.458 1045.7    620.0    645.3
-#  female SATQ      592.8 6.131  895.9    580.8    604.8
-# 
-# Confidence level used: 0.95
+##  contrast estimate     SE  df t.ratio p.value
+##  0 - 1      0.3469 0.9679 675   0.358  0.9992
+##  0 - 2      0.6269 0.9656 675   0.649  0.9871
+##  0 - 3     -0.8640 0.7109 675  -1.215  0.8294
+##  0 - 4     -1.6036 0.7620 675  -2.105  0.2861
+##  0 - 5     -2.4192 0.7666 675  -3.156  0.0207
+##  1 - 2      0.2801 1.0300 675   0.272  0.9998
+##  1 - 3     -1.2109 0.7963 675  -1.521  0.6510
+##  1 - 4     -1.9505 0.8422 675  -2.316  0.1890
+##  1 - 5     -2.7660 0.8464 675  -3.268  0.0144
+##  2 - 3     -1.4909 0.7934 675  -1.879  0.4159
+##  2 - 4     -2.2305 0.8394 675  -2.657  0.0854
+##  2 - 5     -3.0461 0.8437 675  -3.611  0.0044
+##  3 - 4     -0.7396 0.5270 675  -1.403  0.7250
+##  3 - 5     -1.5552 0.5337 675  -2.914  0.0427
+##  4 - 5     -0.8155 0.6001 675  -1.359  0.7515
+## 
+## Results are averaged over the levels of: gender 
+## P value adjustment: tukey method for comparing a family of 6 estimates
 ```
 
 ]
@@ -1353,7 +1904,7 @@ ggplot(Machines, aes(x = Machine, y = score)) +
   theme_light()
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-60-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-84-1.svg)&lt;!-- --&gt;
 
 ---
 
@@ -1598,7 +2149,7 @@ ggplot(data = dat) +
   theme(text = element_text(size=20))
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-71-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-95-1.svg)&lt;!-- --&gt;
 
 ]
 
@@ -1725,7 +2276,7 @@ ggplot(slopes, aes(estimate)) +
   theme(text = element_text(size=20))
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-76-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-100-1.svg)&lt;!-- --&gt;
 
 ]
 --
@@ -1832,7 +2383,7 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
 (function () {
   var script = document.createElement('script');
   script.type = 'text/javascript';
-  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
   if (location.protocol !== 'file:' && /^https?:/.test(script.src))
     script.src  = script.src.replace(/^https?:/, '');
   document.getElementsByTagName('head')[0].appendChild(script);

@@ -5,8 +5,8 @@ Please bring your laptop and prepare it beforehand. This includes:
 
 In the interest of spending the time of the tutorial on its content, it is important that you do this at least one or two days before the tutorial. I will not have the time to solve installation problems at the day of the tutorial. So please make sure you do this beforehand!
 
-The latest version of R is 3.5.1 and can be downloaded from: https://cran.rstudio.com/
-The latest version of RStudio is 1.1.453 and can be downloaded from: https://www.rstudio.com/products/rstudio/download/#download
+The latest version of R is 3.5.2 and can be downloaded from: https://cran.rstudio.com/
+The latest version of RStudio is 1.1.463 and can be downloaded from: https://www.rstudio.com/products/rstudio/download/#download
 
 Please note that both R and RStudio need to be updated independently and older versions of R/RStudio are likely to not work properly.
 
@@ -18,6 +18,7 @@ tidyverse
 broom
 xaringan
 sjPlot
+GGally
 
 After installation of these packages, please ensure that you can produce ("knit") xaringan presentations. For this, start RStudio and create a new example presentation:
 - In RStudio select from the menu File -> New File -> R Markdown -> From Template -> Ninja Presentation 
@@ -26,6 +27,6 @@ After installation of these packages, please ensure that you can produce ("knit"
 
 If successful, clicking "Knit" should create and open the example presentation ("Presentation Ninja - with xaringan ...") as an html file (e.g., "test.html"). The file will likely be opened in an RStudio internal html viewer. Clicking "Open in Browser" will open the file in a browser.
 
-All workshop materials are available from: https://github.com/singmann/mixed_model_workshop/releases
+All workshop materials will be made available from tomorrow evening: https://github.com/singmann/mixed_model_workshop_2day/releases
 Download the corresponding zip or tar.gz archive ("Source code"). This archive contains all slides and code used at the workshop. 
 Please note that it is possible that I will update the materials until the workshop. 

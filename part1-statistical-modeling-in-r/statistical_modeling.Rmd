@@ -1,8 +1,8 @@
 ---
 title: "Statistical Modeling in R"
 subtitle: "The Basics"
-author: "Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "July 2018"
+author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
+date: "January 2019"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
@@ -42,7 +42,7 @@ class: inline-grey
    - Estimated marginal means: Pass fitted model to `emmeans::emmeans()` (formerly:`lsmeans::lsmeans()`)
    - Specify specific contrasts on estimated marginal means (e.g., `contrast()`, `pairs()`)
 
-`afex` combines fitting (5.) and testing (7.):
+`afex` combines correct coding (3.), fitting (5.) and testing (7.):
 - ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
 - (Generalized) linear mixed-effects models: `afex::mixed()`
 
@@ -100,31 +100,21 @@ sat.act <- na.omit(sat.act)
 ```
 
 ---
-# Some Example Data
+class: small
+
+## Some Example Data
 
 
-```{r, fig.height=4, dev='svg'}
-par(mfrow=c(1,2))
-plot(sat.act$SATV, sat.act$ACT)
-plot(sat.act$SATQ, sat.act$ACT)
-```
-
-.pull-left[
-```{r, fig.height=3.5, fig.width=3.5, dev='svg', results='hide', message=FALSE, include=FALSE, eval=FALSE}
+```{r, fig.height=3.5, fig.width= 7, dev='svg', message=FALSE}
 library("tidyverse")
-ggplot(sat.act, aes(x = ACT, y = SATV)) +
-  geom_point() +
-  theme_light()
+theme_set(theme_bw(base_size = 17))
+sat2 <- sat.act %>% 
+  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
+ggplot(sat2, aes(x = sat_value, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  facet_wrap(~ sat_type)
 ```
-]
 
-.pull-right[
-```{r, fig.height=3.5, fig.width=3.5, dev='svg', include=FALSE, eval=FALSE}
-ggplot(sat.act, aes(x = ACT, y = SATQ)) +
-  geom_point() +
-  theme_light()
-```
-]
 
 ---
 # Linear Regression Model
@@ -162,9 +152,12 @@ summary(m1)
 coef(m1)
 ```
 
-```{r, fig.height=3.7, fig.width=4, dev='svg'}
-plot(sat.act$SATQ, sat.act$ACT)
-abline(m1)
+```{r, fig.height=3, fig.width=4, dev='svg'}
+ggplot(sat.act, 
+       aes(x = SATQ, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
 ```
 ]
 ---
@@ -186,13 +179,285 @@ summary(m2)
 coef(m2)
 ```
 
-```{r, fig.height=3.7, fig.width=4, dev='svg'}
-plot(sat.act$SATQ_c, sat.act$ACT)
-abline(m2)
+```{r, fig.height=3, fig.width=4, dev='svg'}
+ggplot(sat.act, 
+       aes(x = SATQ_c, y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
+```
+]
+
+---
+class: small
+
+# Linear Model in R (Scaled)
+
+.pull-left2[
+```{r}
+m2b <- lm(ACT ~ scale(SATQ), sat.act)
+summary(m2b)
+```
+
+- `scale()` calculates z-transformation (minus mean divided by SD) and can be used within formulas
+- **Warning:** `scale()` does not return vector but matrix
+
+]
+.pull-right2[
+```{r}
+coef(m2b)
+```
+
+```{r, fig.height=3, fig.width=4, dev='svg'}
+ggplot(sat.act, 
+       aes(x = scale(SATQ), 
+           y = ACT)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(method = "lm", 
+              se = FALSE)
 ```
 ]
 ---
 
+```{r, fig.height=5.5, fig.width=5.5, dev='svg'}
+GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+```
+
+---
+class: small
+
+### Multiple Regression
+
+```{r}
+m3 <- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+summary(m3)
+```
+
+--
+- Why is estimate of `SATQ_c` reduced by 35% (was `0.02453`)?
+--
+
+- In multiple regression, parameter estimates reflect effect after "controlling" for influence of all other predictors!
+- What remains from a specific effect, if others variables are taken into account?
+
+
+---
+class: small
+
+### "Controlling"?
+
+```{r}
+## Full Model
+summary(m3)$coefficients %>% zapsmall(6)
+```
+
+--
+
+```{r}
+## SATQ
+m3_q <- lm(SATQ_c ~ SATV_c, sat.act)
+sat.act$resid_q <- residuals(m3_q)
+summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+```
+
+--
+
+```{r}
+## SATV
+m3_v <- lm(SATV_c ~ SATQ_c, sat.act)
+sat.act$resid_v <- residuals(m3_v)
+summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+```
+
+---
+class: inline-grey
+
+### Exercise 1 (Multiple Regression)
+
+- Open `exercises/exercise_1_MR.Rmd` (or the exercise handout or  `exercises/exercise_1_MR.nb.html` for a nicer format of the instruction).
+- Follow text and try to solve two small tasks helping you to get comfortable with multiple regression.
+- The data comes with `R`, `data(USArrests)`, and contains statistics, in arrests per 100,000 residents, for assault, murder, and rape in each of the 50 US states in 1973. Also given is the percent of the population living in urban areas.
+- Research question: *Which variables predict murder rates and to what degree?* 
+- Exercise 1: Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable.
+    - Which of the three variables shows a significant effect on murder rates?
+- Exercise 2: Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
+    - Which of the three variables now shows a significant effect on murder rates? If there are differences, how can these differences be explained?
+
+---
+
+## Interim Summary: Linear and Multiple Regression
+
+- Linear regression summarizes linear relationship with regression parameters, allows prediction
+    - Intercept ($b_0$ or $/beta_0$): expected value of DV at origin of IVs (i.e., when IVs are 0)
+    - Slopes (e.g., $b_1$ or $/beta_1$): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
+- Linear transformation of variables does not change significance of slope or adequacy of model
+    - transformation can simplify interpretation of estimates and comparison across scales
+    - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
+- Regression allows including several predictors
+- Potential problems **multicollinearity** (i.e., predictors correlated among each other)
+    - imprecise regression estimates
+    - increases standard errors
+    - Potentially suppression effects or other regression problems can occur.
+- Parameter estimates reflects unique contribution of each predictor (i.e., beyond what is explained by other variables or controlling for other variables)
+
+
+
+---
+.pull-left[
+### Income and Prestige
+
+```{r}
+data("Prestige", package = "carData")
+glimpse(Prestige, width = 50)
+```
+
+- Occupations in Canada in 1971
+- Each data point is one occupation
+
+
+- `income`: Average income of incumbents, dollars, in 1971. 
+- `education`: Average education of occupational incumbents, years, in 1971. 
+- `prestige`: Pineo-Porter prestige score for occupation, from a social survey conducted in the mid-1960s (from 0 to 100).
+
+]
+.pull-right[
+```{r, fig.width=5, fig.height=5, dev='svg'}
+GGally::ggscatmat(Prestige, 
+                  columns = c(1, 4, 2))
+```
+
+]
+
+---
+
+```{r}
+mp_1 <- lm(income ~ education + prestige, Prestige)
+summary(mp_1)
+```
+
+---
+
+```{r}
+mp_1b <- lm(income ~ scale(education) + scale(prestige), Prestige)
+summary(mp_1b)
+```
+
+---
+
+```{r}
+mp_3 <- lm(income ~ scale(education)*scale(prestige), Prestige)
+summary(mp_3)
+```
+
+
+---
+class: small
+
+- Interaction: Effect of one variable depends on value of another variable!
+- For interactions of continuous covariates, it is common to inspect effect conditional at mean and plus/minus 1 SD from mean (Cohen et al., 2002).
+
+```{r}
+library("emmeans")
+get_z_positions <- function(x, at = c(-1, 0, 1), round = 2) {
+  return(round(mean(x) + at*sd(x), round))
+}
+pres_t <- emtrends(mp_3, specs = "education", var = "prestige", 
+                   at = list(education = get_z_positions(Prestige$education))) %>% summary
+```
+
+.pull-left[
+```{r}
+pres_t
+pres_t$prestige.trend * sd(Prestige$prestige)
+```
+
+]
+.pull-right[
+```{r}
+summary(mp_3)$coefficients %>% zapsmall
+```
+
+]
+
+---
+
+- 2-way interaction always allows 2 interpretations: One variable is focal, other is conditioning variable.
+
+```{r}
+edu_t <- emtrends(mp_3, specs = "prestige", var = "education", 
+                  at = list(prestige = get_z_positions(Prestige$prestige)))  %>% summary
+
+edu_t
+```
+
+
+.pull-left[
+```{r}
+edu_t$education.trend * 
+  sd(Prestige$education)
+```
+]
+
+.pull-right[
+```{r}
+summary(mp_3)$coefficients %>% zapsmall
+```
+
+]
+
+---
+class: small
+
+- Alternatively, we can inspect interaction by transforming one variable into numerical variable!
+
+```{r}
+Prestige <- Prestige %>% 
+  mutate(edu_cat = cut(education, 3, labels = c("low", "medium", "high")),
+         prestige_cat = cut(prestige, 3, labels = c("low", "medium", "high"))
+         )
+```
+
+```{r, include=FALSE, eval=FALSE}
+## Alternatively, create unequal size groups based on theoretical quantiles.
+Prestige <- Prestige %>% 
+  mutate(edu_cat = cut(education, 
+                       breaks = c(
+                         0, 
+                         get_z_positions(education, 
+                                         at = c(qnorm(.333), qnorm(.666))), 
+                         Inf), 
+                       labels = c("low", "medium", "high")),
+         prestige_cat = cut(prestige, 
+                       breaks = c(
+                         0, 
+                         get_z_positions(prestige, 
+                                         at = c(qnorm(.333), qnorm(.666))), 
+                         Inf), 
+                       labels = c("low", "medium", "high"))
+         )
+```
+
+
+.pull-left[
+```{r, fig.width=4.5, fig.height=4.5, dev='svg', echo=FALSE}
+ggplot(Prestige, aes(x = prestige, y = income, 
+                     color = edu_cat, shape = edu_cat)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "bottom")
+```
+]
+.pull-right[
+```{r, fig.width=4.5, fig.height=4.5, dev='svg', echo=FALSE}
+ggplot(Prestige, aes(x = education, y = income, 
+                     color = prestige_cat, shape = prestige_cat)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "bottom")
+```
+]
+
+---
 class: inline-grey
 # Formula Interface for Statistical Models: `~`
 
@@ -254,6 +519,21 @@ summary(lm(ACT ~ 0 + SATQ:SATV, sat.act)) # c
 summary(lm(ACT ~ SATQ*SATV, sat.act))     # d
 summary(lm(ACT ~ 0+SATQ*SATV, sat.act))   # e
 ```
+
+---
+
+### Interim Summary
+
+- A linear model attempts to describe data generating process of DV using IVs and distributional assumptions (e.g., normal residuals)
+    - R formula interface allows specification in symbolic form
+    - Regression equation allows predictions for arbitrary values of IVs
+- Linear transformation of variables affects interpretation of estimates, but not overall adequacy of model
+    - Multiple regression estimates coefficients while "controlling" for other IVs
+    - Multicollinearity might affect estimates and precision
+- Interactions test if effect of one variable depend on value of other variable (i.e., magnitude of effect of one variable changes conditional on value of other variable)
+    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two possibilities)
+    - If model involves interaction, estimates of lower order effects are effect if other variables are 0 (centring of variables often provides reasonable interpretation if interactions are involved)
+
 
 
 ---
@@ -691,7 +971,7 @@ class: inline-grey
 
 --
 
-`afex` combines fitting (5.) and testing (7.):
+`afex` combines correct coding (3.), fitting (5.) and testing (7.):
 - ANOVAs: `afex::aov_car()`, `afex::aov_ez()`, or `afex::aov_4()`
 - (Generalized) linear mixed-effects models: `afex::mixed()`
 
@@ -706,23 +986,57 @@ class: small
 library("afex")
 sat.act$id <- factor(1:nrow(sat.act))
 (a1 <- aov_car(ACT ~ gender+Error(id), sat.act))
+```
+]
+--
+
+.pull-right[
+```{r}
+(a2 <- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
+```
+]
+
+---
+
+## Plotting with `afex_plot`
+
+.pull-left[
+```{r}
+(a2 <- aov_car(ACT ~ gender*education+Error(id), 
+               sat.act))
+```
+
+for more see:  
+https://singmann.github.io/afex_plot_introduction.html
+
+]
+.pull-right[
+```{r, fig.width=4.5, fig.height=4.5, dev='svg'}
+afex_plot(a2, "education", "gender",
+          data_geom = geom_violin, 
+          data_arg = list(width = 0.4)) +
+  theme(legend.position = "bottom")
 
 ```
+]
+
+---
+
+### Follow-Up Tests with `afex`
+
+- `afex` provides full support for `emmeans`
+
+.pull-left[
 ```{r}
-sat_long <- tidyr::gather(
-  sat.act, key = "SAT_type", 
-  value = "SAT_value", SATV, SATQ)
+emmeans(a2, "gender")
 ```
 
 ]
 
---
 .pull-right[
-
-```{r, message=FALSE, comment='#'}
-(a2 <- aov_car(SAT_value ~ gender*SAT_type+
-                 Error(id/SAT_type), sat_long))
-emmeans(a2, c("gender", "SAT_type"))
+```{r}
+emmeans(a2, c("education")) %>% pairs
 ```
 
 ]
