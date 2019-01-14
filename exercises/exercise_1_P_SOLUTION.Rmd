@@ -1,5 +1,5 @@
 ---
-title: "Exercise 1"
+title: "Exercise 1: Pooling (Solution)"
 output: html_notebook
 editor_options: 
   chunk_output_type: inline

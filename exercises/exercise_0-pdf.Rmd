@@ -1,7 +1,7 @@
 ---
 title: "Exercise 0: Introduction"
 author: "Henrik Singmann"
-date: "25 July 2018"
+date: "January 2019 (updated: `r Sys.Date()`)"
 output: pdf_document
 ---
 

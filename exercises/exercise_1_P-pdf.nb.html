@@ -210,7 +210,7 @@ $(document).ready(function () {
 </style>
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("exercise_1_P.Rmd");
+  window.initializeSourceEmbed("exercise_1_P-pdf.Rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>
@@ -294,30 +294,18 @@ library(&quot;broom&quot;) # not automatically loaded</code></pre>
 <p>I have already downloaded the data from the OSF and prepared it according to the descriptions found there. The prepared data is in <code>dat</code>.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBSdW4gY29tcGxldGUgY2h1bms6IEN0cmwrU2hpZnQrRW50ZXJcbiMgWW91IG1pZ2h0IG5lZWQgdG8gc2V0IHRoZSBjb3JyZWN0IHdvcmtpbmcgZGlyZWN0b3J5IHZpYSB0aGUgbWVudTogXG4jIFNlc3Npb24gLT4gU2V0IFdvcmtpbmcgRGlyZWN0b3J5IC0+IFRvIFNvdXJjZSBGaWxlIExvY2F0aW9uXG5hZmV4OjpzZXRfc3VtX2NvbnRyYXN0cygpICMganVzdCBpbiBjYXNlIHdlIHNldCBvcnRob2dvbmFsIGNvbnRyYXN0c1xuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBSdW4gY29tcGxldGUgY2h1bms6IEN0cmwrU2hpZnQrRW50ZXJcblxuIyBZb3UgbWlnaHQgbmVlZCB0byBzZXQgdGhlIGNvcnJlY3Qgd29ya2luZyBkaXJlY3RvcnkgdmlhIHRoZSBtZW51OiBcbiMgU2Vzc2lvbiAtPiBTZXQgV29ya2luZyBEaXJlY3RvcnkgLT4gVG8gU291cmNlIEZpbGUgTG9jYXRpb25cblxuYWZleDo6c2V0X3N1bV9jb250cmFzdHMoKSAjIGp1c3QgaW4gY2FzZSB3ZSBzZXQgb3J0aG9nb25hbCBjb250cmFzdHNcblxubG9hZChcInNzazE2X2RhdF9wcmVwYXJlZF9leDEucmRhXCIpICMgZGF0YSBwcmVhcHJlZCBpbiAncHJlcGFyZV9kYXRhLlInXG5nbGltcHNlKGRhdDEpXG5cbmBgYCJ9 -->
 <pre class="r"><code># Run complete chunk: Ctrl+Shift+Enter
+
 # You might need to set the correct working directory via the menu: 
 # Session -&gt; Set Working Directory -&gt; To Source File Location
-afex::set_sum_contrasts() # just in case we set orthogonal contrasts</code></pre>
+
+afex::set_sum_contrasts() # just in case we set orthogonal contrasts
+
+load(&quot;ssk16_dat_prepared_ex1.rda&quot;) # data preapred in 'prepare_data.R'
+glimpse(dat1)
+</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoic2V0dGluZyBjb250ci5zdW0gZ2xvYmFsbHk6IG9wdGlvbnMoY29udHJhc3RzPWMoJ2NvbnRyLnN1bScsICdjb250ci5wb2x5JykpXG4ifQ== -->
-<pre><code>setting contr.sum globally: options(contrasts=c('contr.sum', 'contr.poly'))</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubG9hZChcInNzazE2X2RhdF9wcmVwYXJlZF9leDEucmRhXCIpICMgZGF0YSBwcmVhcHJlZCBpbiAncHJlcGFyZV9kYXRhLlInXG5nbGltcHNlKGRhdDEpXG5gYGAifQ== -->
-<pre class="r"><code>load(&quot;ssk16_dat_prepared_ex1.rda&quot;) # data preapred in 'prepare_data.R'
-glimpse(dat1)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiT2JzZXJ2YXRpb25zOiAzNzZcblZhcmlhYmxlczogN1xuJCBwX2lkICAgICAgICAgIFx1MDAxYlszbVx1MDAxYlszODs1OzI0Nm08ZmN0Plx1MDAxYlszOW1cdTAwMWJbMjNtIFwiMzZfUChpZix0aGVuKVwiLCBcIjM2X1AoaWYsdGhlbilcIiwgXCIzNl9QKGlmLHRoZW4uLi5cbiQgaV9pZCAgICAgICAgICBcdTAwMWJbM21cdTAwMWJbMzg7NTsyNDZtPGZjdD5cdTAwMWJbMzltXHUwMDFiWzIzbSAxLCA3LCAxMCwgMTIsIDIsIDQsIDUsIDgsIDEsIDMsIDksIDExLCA1LCA2LCAxMC4uLlxuJCBCX2dpdmVuX0EgICAgIFx1MDAxYlszbVx1MDAxYlszODs1OzI0Nm08ZGJsPlx1MDAxYlszOW1cdTAwMWJbMjNtIDUyLCA3OSwgNzksIDc3LCA5OCwgOTgsIDk3LCA5MCwgMjgsIDEwMCwgMTAwLCAxLi4uXG4kIEJfZ2l2ZW5fQV9jICAgXHUwMDFiWzNtXHUwMDFiWzM4OzU7MjQ2bTxkYmw+XHUwMDFiWzM5bVx1MDAxYlsyM20gMC4wMiwgMC4yOSwgMC4yOSwgMC4yNywgMC40OCwgMC40OCwgMC40NywgMC40MCwuLi5cbiQgaWZfQV90aGVuX0IgICBcdTAwMWJbM21cdTAwMWJbMzg7NTsyNDZtPGRibD5cdTAwMWJbMzltXHUwMDFiWzIzbSA1MiwgODQsIDk0LCA4MSwgOTUsIDk3LCA5MCwgOTUsIDI4LCAxMDAsIDEwMCwgMS4uLlxuJCBpZl9BX3RoZW5fQl9jIFx1MDAxYlszbVx1MDAxYlszODs1OzI0Nm08ZGJsPlx1MDAxYlszOW1cdTAwMWJbMjNtIDAuMDIsIDAuMzQsIDAuNDQsIDAuMzEsIDAuNDUsIDAuNDcsIDAuNDAsIDAuNDUsLi4uXG4kIHJlbF9jb25kICAgICAgXHUwMDFiWzNtXHUwMDFiWzM4OzU7MjQ2bTxmY3Q+XHUwMDFiWzM5bVx1MDAxYlsyM20gUE8sIFBPLCBQTywgUE8sIFBPLCBQTywgUE8sIFBPLCBQTywgUE8sIFBPLCBQTywuLi5cbiJ9 -->
-<pre><code>Observations: 376
-Variables: 7
-$ p_id          [3m[38;5;246m&lt;fct&gt;[39m[23m &quot;36_P(if,then)&quot;, &quot;36_P(if,then)&quot;, &quot;36_P(if,then...
-$ i_id          [3m[38;5;246m&lt;fct&gt;[39m[23m 1, 7, 10, 12, 2, 4, 5, 8, 1, 3, 9, 11, 5, 6, 10...
-$ B_given_A     [3m[38;5;246m&lt;dbl&gt;[39m[23m 52, 79, 79, 77, 98, 98, 97, 90, 28, 100, 100, 1...
-$ B_given_A_c   [3m[38;5;246m&lt;dbl&gt;[39m[23m 0.02, 0.29, 0.29, 0.27, 0.48, 0.48, 0.47, 0.40,...
-$ if_A_then_B   [3m[38;5;246m&lt;dbl&gt;[39m[23m 52, 84, 94, 81, 95, 97, 90, 95, 28, 100, 100, 1...
-$ if_A_then_B_c [3m[38;5;246m&lt;dbl&gt;[39m[23m 0.02, 0.34, 0.44, 0.31, 0.45, 0.47, 0.40, 0.45,...
-$ rel_cond      [3m[38;5;246m&lt;fct&gt;[39m[23m PO, PO, PO, PO, PO, PO, PO, PO, PO, PO, PO, PO,...</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>Variables in the data:</p>
@@ -339,26 +327,6 @@ $ rel_cond      [3m[38;5;246m&lt;fct&gt;[39m[23m PO, PO, PO, PO, PO, PO, PO,
 <pre class="r"><code>m0 &lt;- lm(if_A_then_B ~ B_given_A, dat1)
 summary(m0)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiXG5DYWxsOlxubG0oZm9ybXVsYSA9IGlmX0FfdGhlbl9CIH4gQl9naXZlbl9BLCBkYXRhID0gZGF0MSlcblxuUmVzaWR1YWxzOlxuICAgIE1pbiAgICAgIDFRICBNZWRpYW4gICAgICAzUSAgICAgTWF4IFxuLTY5LjUxMyAgLTcuODI0ICAgMC44MTEgICAyLjc5OCAgODEuNTU0IFxuXG5Db2VmZmljaWVudHM6XG4gICAgICAgICAgICBFc3RpbWF0ZSBTdGQuIEVycm9yIHQgdmFsdWUgUHIoPnx0fCkgICAgXG4oSW50ZXJjZXB0KSAxOC40NDYxNiAgICAxLjk2NjkwICAgOS4zNzggICA8MmUtMTYgKioqXG5CX2dpdmVuX0EgICAgMC43ODc1NiAgICAwLjAyNjU5ICAyOS42MjQgICA8MmUtMTYgKioqXG4tLS1cblNpZ25pZi4gY29kZXM6ICAwIOKAmCoqKuKAmSAwLjAwMSDigJgqKuKAmSAwLjAxIOKAmCrigJkgMC4wNSDigJgu4oCZIDAuMSDigJgg4oCZIDFcblxuUmVzaWR1YWwgc3RhbmRhcmQgZXJyb3I6IDE3LjY1IG9uIDM3NCBkZWdyZWVzIG9mIGZyZWVkb21cbk11bHRpcGxlIFItc3F1YXJlZDogIDAuNzAxMixcdEFkanVzdGVkIFItc3F1YXJlZDogIDAuNzAwNCBcbkYtc3RhdGlzdGljOiA4NzcuNiBvbiAxIGFuZCAzNzQgREYsICBwLXZhbHVlOiA8IDIuMmUtMTZcbiJ9 -->
-<pre><code>
-Call:
-lm(formula = if_A_then_B ~ B_given_A, data = dat1)
-
-Residuals:
-    Min      1Q  Median      3Q     Max 
--69.513  -7.824   0.811   2.798  81.554 
-
-Coefficients:
-            Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept) 18.44616    1.96690   9.378   &lt;2e-16 ***
-B_given_A    0.78756    0.02659  29.624   &lt;2e-16 ***
----
-Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1   1
-
-Residual standard error: 17.65 on 374 degrees of freedom
-Multiple R-squared:  0.7012,    Adjusted R-squared:  0.7004 
-F-statistic: 877.6 on 1 and 374 DF,  p-value: &lt; 2.2e-16</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>When we completely ignore the dependencies in the data, we can see a clear relationship between the IV and DV. The regression parameter estimate for <code>B_given_A</code> is clearly significant (i.e., different from 0) but also not too far away from 1.0. If it were 1.0, this would mean that <em>P</em>(if <em>A</em> then <em>B</em>) = <em>P</em>(<em>B</em>|<em>A</em>) would hold exactly.</p>
@@ -370,9 +338,6 @@ F-statistic: 877.6 on 1 and 374 DF,  p-value: &lt; 2.2e-16</code></pre>
   geom_point(mapping = aes(x = B_given_A, y = if_A_then_B), alpha = 0.2, pch = 16) + 
   coord_fixed()</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-plot-begin eyJjb25kaXRpb25zIjpbXSwiaGVpZ2h0IjozLCJzaXplX2JlaGF2aW9yIjoxLCJ3aWR0aCI6N30= -->
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAEgCAMAAABcujGyAAABDlBMVEUAAAAAADoAAGYAOpAAZrYCAgIDAwMEBAQFBQUGBgYHBwcJCQkLCwsODg4RERESEhIVFRUWFhYaGhogICAoKCgyMjIzMzM1NTU6AAA6ADo6AGY6kNs+Pj5CQkJNTU1NTW5NTY5NbqtNjshgYGBmAABmADpmAGZmZmZmtv9oaGhuTU1uTW5uTY5ubqtuq+R4eHiCgoKOTU2OTW6OTY6OyP+QOgCQkGaQtpCQ29uQ2/+Wlpajo6Orbk2rbm6rbo6ryKur5P+2ZgC2Zma225C2//+8vLzIjk3I///MzMzbkDrb/7bb/9vb///kq27k///r6+v/tmb/trb/yI7/25D/5Kv//7b//8j//9v//+T///+BU95gAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAU3UlEQVR4nO2djX/Uth2HAxRKaEdDkwAd1LxctrG+xNCGbfhoGzYckrUQljfi//8fmeR3nyVZ0smSTv4+n5LcnWzrIj39WZJleS0DwGPWXH8BAERAUOA1EBR4DQQFXgNBgddAUOA10xP0uKH9ugs/xXjSiFm5LmoTQFDb1ljMynVRmwCC2rbGYlaui9oEENS2NRazcl3UJoCgtq2xmJXrojYBBLVtjcWsXBe1CSCobWssZuW6qE0QrKBnP7zLsosX0ZMP9a8C19ZYzMpl+ZsiVEFPosfvssvXe9n7p9WvkqYm4+exLWuSeWI+qyTpHTSO4+vXr9cbBUCggh48+o1E0Iuf39FIWv4qk1qV+TyOjVvDJCGC8gzVzipJeoYWftaGOq0CQwQqaHGKP/vxQ3bx0375i3x4l1Bv8Zxi58vMKRYOSv6gXFDTWTkkaEFPnuRmlr/KhCbczP4+i02HNTYjR9A0TfPf0db6bUTQFYEZQSl1HadE0NS0NRxGbYOmaWFoFH25vv458XO72igAghZU3AZNiTW2BB21F18LurW+/uWtW/e2IegKQI28fL1b9OJ3Wb34Uc676knmBN0igq5D0BVheByUF0FpbRu0sJBHKGjVhtTNqtg/nd3euHF7c/vedr1RAAQrKJdWtR6yxMjjkTlBy/AmErSKgMtllabb29sPH2KgftVpVekhJ4CuoqBJHM+IoDEEXXWGBFhNQRMi6MPZjF55gKCrzaAAPrZBmy3KVzSJxMw0Kd5ub24SQ6PZ7BiCrjpSrnnWi29ibPUqy/2cRUlu6DYRlBi6GKxdF7UJIKg51QRJ7Oau7PFSqmFhXyNoOpsVgpK07a2trzeTXmvCdVGbAILqWqOSxBkwkDxeSgTNPSTHqAVNiaARFZTKu7lF6Dd3XRe1CSCopjVKScsK2g2heVIax9tRRLTNL8lvbZEA2mvuui5qE0BQTWuUkpYWtBU7yyTaAp3RD6ifcR5j08UDui5qE0BQTWvUkpZsgxZXitqOZwkRNM5Dau5mHmIXD+i6qE0AQZmjPJ714hlJdOCzEbQdXyHoatMTgDVO7r+gdGi+CKy5oK3/yyDoatOu5c7IjQlrNJLUd6quJBSK9r4+BF1tWlV5yOh96FqjnaS8U3UttjzJQ9DAaFXlYWfkZilrBpN4lzPlelbN3klxwYgKun7zZhlC63/dA7ouahNAUGXVtJI0smqNTTVRko4pxYWg60TQm8XHNDmptoGgq03bDY2w5l7QvOVJ9vqCGHorqUagIGgoSAnltaBJsdcXhFvNFXoIGggSbhA1+KqZa4MOTcTjtEGTKqtbt9ar8fmiDZrgUmcADAuVpoILP+aCa29uh+Lx6OWjuLnCyTig66I2AQRlmrMqghaD9LwDui5qE0xP0GEOKf5nc3g4n8/bR7D0ve0yPUElIhS/DZoavl1JbifOQG3V6KzTMd0uBKSE4p/8jfefZKfb8fdaSIegq80y1kBQ60BQFWs8ELQ1zBSXy5tC0KBYyhqjbVDpnbp+VgP1cdwylHlA10VtAgiqa42pJClBq9HONI4ZgvIO6LqoTQBBda0xlSRziq/uOEqJoDEEDRtD1hhLUhI0SWZxrw3KPaDrojYBBNW0xliSiqDNqt9SWbkuahNAUE1rjCXlKeypTk0btDivV/cfyWbluqhNAEEVfRpFUNZIZ3unKr3ZDoIGi7Q1JpOYs0+aK5N8QWsxi9BZ9+chaLBICWVYUObKIq3JR1xB02pCctOPl76CD0FXEynXTAvKWg6/PTuO1watfNz8+uu0Jyhnjj4EXW2kXDMsKPOBIjLzQctttrY2NzcXBeWEXQi64ki5ZiOCsqbbLVy0rJqcW9TQ9pQ6CBouUq7ZaIMydlpwrr7Tbitf/3NhLwgaJjJC2enF93fiCXq86CfaoOEiJZSjK0lcQfWycl3UJoCg+vVvJkncBtVf9vYYgq4m6taMm8RL0Z162mpNuC5qE0BQxfq3Jaju5P12f8x1UZsAgir6ZDiJayEELQha0PcRZS///bj3vHgfBOWvEQFBC4IWlHLy5EN2sNf6gFXLvc6IrckiaZI8Zz4TnKbevrNRfbfmCzYD9cNZOSt0g4Qu6MVP+9nlL/utTxhC9Ye8bU0WiZP4eczpqm9s3NnYKL5b8wUxWSQw3j8lkr7IT/SEuwTGRqOvGcPMgH42nz9/PmcmZdkdSrFrs3/1KsBFbtgELigNoNnZ9+0oyog17iJokl+lX0wqvo8ogtLjDQ+ROi16QwQuKG2BFtTtUFZVOmuDkn/z7vpK5Ws6P3mD3wblCZqmKQRdJQ5261ciQRVUG2kctBPEq/nJQuFZguZHgaCrQ3Fip2H08lcvh5mOmYKWz98WHY89OwqCrhh5EzQfD31Ud+QVrLGSxBK0fKt8PAgaAArWWEkqU9LWk47Kt3oD/2iDrjgq1thIalJ6gwnLZuW6qE0AQfXr30wSBBUCQfXrf9mkxWtCAkH1xsFcF7UJIKi0T6aTSh+zzifsnTSvJLguahNAUFmflk5adKwt6MDtbxB0QkjV8giC9iRrCdoXsHs8CDohpGrZhqDstZnaG8m3Qdl7uS5qE0BQddX0kjhRckHQzlbSWXH2cl3UJghE0Ddraw9O76+tfTa8qZRQ5gUtnqLN26kdQFmqDURQCOo5b6798enl2rPs08sHg9tKCWVc0Hm9NrJ4J7ZqQ21QCOo3n14+y7KPV9+SH9f+GNpYSihLgvYuuDfP8+gcb7CThDao15zv1ILSH2KkhLIj6MLcjp6I6MVD0MFKNpOUHsbsAFoKWtrLExRXklYb7wXlrG5XC1o9vYMrqN63sFH2YwNB9etfPom3/GLVBq0fL9ONlBA0GEHXKlZL0GqnhN3Hh6CBCKqEVC2bb4OK1wdlj0FB0BAFPf+rOIhyatnsyVUhacSsLJX4qEDQAsPdE4UkCCoEghZAUE+ZnqBsRl/9BugxPUE5YQhtUD+BoLatsZiVpRIfFQiqX/961x+rPatnbENQIRBUu/41Z3AcV+vaxXFuKAQVEp6gQ0jVsgVBk9kMgg4TjKB0Pr3dS53LCRoTQWcQdJBQBP30UuJujxypWh6/DUpDaIw26CChCJpPaJJCqpbH78XX8ReCCglF0PyuDymkatnCMFNaPv9d51kzEHT1kJgJWiBVy7bGQVPuc5JMZDVuidshFEGrKaF+zgeFoNqEIqg8UrUMQX0Bgo6ihnQS2qADhCPo0dras6Ph2+IdCNq7+328rLpJFkp9dIIR9M21/+48kxkNlaplk9b07n4fL6uFJAvFPjqhCHq+84wOhfp4V2dbUMb6YRBUCAQdRY02LUFZK9xBUCGhCJod0VP8+Y6Pi4eVbdDy+XEQVIlgBM0+0mHQYT+d9eKpn3HSf3IsBBUSjqCySNXyGILGdPZSgjaoGhB0FDUYSTERdMZYXwSCCglGUI35oEPLfRhMSubk/B5HsxHWtxEk2Sj3sQlFUPYI6Psoih6/yy5eRPVz45vqG1owyWBSQgSdEUNZq4BDUCGhCMqeD1o8JP7y9V72/mn1WV19KbFGXVCyk7o1yY0b14szfDvD5ikfyt8Cgq4azPmgxePis4uf32VnP/SeF0/DGk82YSzkGsrdi/h5/fpiH74cFIWgQkIRlDlET07tUbSXnf34oXxy/F1CnXo4n8+VFxOZU5S/3E0i6I35Qn5YzESGIATlrQ969v0+jaInTypBKa0IptEG1YugN29+/vmNxTFQRFAZghBUyMFeE0EpLUN0evFabVBqaNobo0cbVIJQBC07SYwT/cEepw3qxXxQCDpA0ILSc/vlr+8uX++yevEQdBUIQ9Cjug3aHQ19H0WP9jPOOCgEXQXCEHQF74u3kdWoJW6JUARtwPKLzasAgKC2rbGYlaUSHxUIatsai1lZKvFRgaC2rbGYlaUSHxUIqlT/wvszIegIQFCV+qcXJ00vtABBhUBQlfqHoNaBoCr1D0GtE5qg/x73vni0QW0TlKDnO6u2/OK4Wdko87EJSFB6QV7ieqdrayxmNX6Zj08oguZzlqWeozCSNeIl7CCoLmEISoLnlVfZG4eCDixhB0F1CULQciqTqqCyM+p5z5ltfZ4mCfmPdvBns5maUBBUSBCC5usyPVMVVPaeJN6j5Fufl+suEeFnM7ahEFSTMASltx0rt0GNCpoSQdN5kvYFHbrzCIIKCUXQrAqjg7TMMSlomuQLQUSLgg7euwlBhQQkaB5Gx1ibSaYNSp+vnTxP8hDaORIEXY6gBCX876276Xb0lvnePckQdDlCE3T0+aCCsEvaoIzFnso2KGN1+qGsIGg2RUGXQ7RejW4aEDA9QSXCkGDKkqhndSxO4iQiggqBoH1EzycUCiqwBoJqMmVBqYYsbYQP0GQnDS+z1Mmo/QaCCpmwoFTDhBXY1J/wqrhQXWdkFYIKgaDMEKo4bR6CjkYQgpaPmZOjpUlX0CXOuxB0NCYs6EIbdClrFJf6RBtUmiAEba1up3/LR19Qdr9mQA1OZx1XkjQJQ1ATq9v1BO180LwRq8F6XKx4LwgqJBRB5eHW8uJ5F4L6QBCC5m3QZU/xvUqGoD4QhKBKyFuDNqgHQFDb1ljMynVRmwCC6td/b/YnBDUPBNWu/yRZNBSCmgeCatc/BLUBBNWufwhqAwiqV/+0s442qAUgqFb9s4c7Iah5IKhW/UNQW0BQhfpv5tRBUFtAUPn6L6xs2qBmhIKgQiCofP3ngqreDaKXlZkk10VtgrAFPfsuivbyhx5Hj5d/XnyxApPeXZ0QVJOgBb34aT87+34/O9hrfdjUpOzaTM0OhO172xDUIkELevKU/DjYu/xlv/VhXX2yq9t12CaCbhsVCoIKCVpQComiFy+i/EyfZXcJdYrWajTf3rt371uDXw8MELqgl69387N8E0Xr+KIVQR8+/PbhQ6MRDxFUSOCCXrzYLV/V7dCmJpXboBQi6HLWGNkJgobB2Xd194ghqBtrLGblqNSNErSgpZ8nTz5kl78uP8w0ThIEFRK0oHT8k3aPyO9HdUfetTUWs3JZ9qYIWlAmrq2xmJXrojYBBLVtjcWsXBe1CSCobWssZuW6qE0wZUGZw0zMZcDiOB5NKAgqZMKCMgfqmQspxnHLUAhqFQjaJS3n1HU+hKDugKBdiil1Cyd/COqOCQvKbYP2ZyWjDeqMKQvKq+URps1DUF0gKAPlhygskwRBhUBQ29ZYzMp1UZsAgg7Xf/cOTghqFQg6WP8L98BDUKtAUH4ll2sv0YGn6jHb5HV7nCpl7KUqFAQVAkG5lVytXkf9TAoXO2P4/dVFIKh5IGgvDlbLh9TLK9IACkEdMXlBe5rlH3QEbbaBoNaBoFxBW+t/1pugDWobCMoX1I5QEFTI5AXlt0EtCQVBhUDQBZgTlk1aM/bxIGjQaK2HA8ZjeoKKwxBzRv2oEQ8RVAgE7QJBPQOCLhBFUT+l/cCZATXwMFmzQNAuM8piSueRXWI18Dhuw0DQDmkUQVCvgKBtUiJoBEF9AoK2Samhs36Kmzbo0ndGuS5qE0DQjhJV/POhFy9aARqChouglvNb4uXr30wSBBUCQdtG1OdnCOoLELRthFeCog1KgaAtITwTFL34DIJ2aHrgENQXICiluaNjJGu0nngDQTMIWuhTnNvHO8VrPTMMglIg6DEE9RkIegxBfWbKgtKGYaEk2qDeMmFBaVhLlOd2oBdvl2kLmsRxvexSZ5oHBPWFSQs6T2bU0Opty1AI6gsTFvSYCEpDaLNoyHiCkmDN6yVBUCGTEPTiRfTkQ/WmVZWHzbp14wpKgzXPUAgqZAqCXr7ey94/rd41Nblx509J3GjT7tDrq8HsdEFQbaYg6MXP77KzH3rPi9/Y+Or2bca6N0vddsy+5QOCajMFQc9+/JBd/EQfGH+XUH98585XX321uIzIsiuLcPY/PJxjwRItpiDoyZNKUEodXyxGUPTitZmCoE0EpTQ1uXGn5+dIbVAIqs0UBOW0QR1ZYzErp6VuiCkIevl6l9mLh6ArwBQE5Y6DQlD/mYSgHVxbYzEr10VtAghq2xqLWbkuahNAUNvWWMzKdVGbAILatsZiVq6L2gQQ1LY1FrNyXdQmmJ6gLe4Ob2JoJ++z8hYIamUn77PyFghqZSfvs/IWCGplJ++z8pZJCwr8B4ICr4GgwGsgKPAaCAq8ZrqCdubgSXH2XRTtZdn7KIoevxvevKTcXCk7ug/NSymrfE52mY36H+crkxW0ey+yDPSukbPv97ODPaWMis3Vs6N3UqlkdUJVLrNRz81bJito9z4QGU5ojR/sXf6yP7hpi3Jz5ezo/w4qWR08+o0cvsxG/Y/zlskK2r2TThayBzl75md62T2KzZWzowFQLStqZJmN3h/nJZMVtHsvsiT07iZ6llcIbeXmqtnl26plRQUts9H64/xksoLqBJmLF7vlK+V2qGp2J3UfRzorRNCg0GimnX1Xu6IsqGp2B7v1KxVB0QYNhu69yDKUftLYdvmrdOWXmytmV5zY1bKiRpbZqP9x3jJZQdWHCluDk49UejvF5mrZlednpawwDgqAdSAo8BoICrwGggKvgaDAayAo8BoICrwGghrg08s1yrN+yuk3r4Z3P1p7YPwrBQMENcCnl9SwjyxDpfb+29W3Zr9QQEBQAxSCFj/V+Xj1P/f11J4CENQADEHPd9au/PPPb0+/+Vf+6dHVt7QdQCLl6Tf/vN9tDby59vvLzyx/49UBghqgPMVf+6P+5HznAfl3lQj66oh8TDb4RCUkr0/vk/dHrXM63fQI53geENQAZSepZdlH+vooF5T2k8i//JPznWen9HTe7jvRhFOc43lAUAMUEfR8pwmhNGxmp/QU/4omkrdHucNrD3I324K++YweAOd4DhDUAGXr82MTQluCklP/74WjecqioKSxuhB9QRsIaoC+oPnLj/kpPjv/C+ktZR+vvMpTFgUtmp84x/OAoAbo9+JbnSRyEl/Lz+IkhBJLFwQtT+44x/OAoAYoO0ntYVA6zPSPUtBiBJ9udOXVYgStQufRlVcZYABBx6M97gQ0gaCjQFucOG2bAIKa5PR+MZh05RUdVRL52Wxp67utKBAUeA0EBV4DQYHXQFDgNRAUeA0EBV4DQYHX/B+aj0ELlAw/wQAAAABJRU5ErkJggg==" /></p>
-<!-- rnb-plot-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -386,8 +351,9 @@ F-statistic: 877.6 on 1 and 374 DF,  p-value: &lt; 2.2e-16</code></pre>
 </ul>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBnb1xuYGBgIn0= -->
-<pre class="r"><code># go</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG4jIGdvXG5gYGAifQ== -->
+<pre class="r"><code>
+# go</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -402,16 +368,6 @@ F-statistic: 877.6 on 1 and 374 DF,  p-value: &lt; 2.2e-16</code></pre>
 <pre class="r"><code>load(&quot;ssk16_dat_prepared_ex2.rda&quot;)
 str(dat2)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiJ2RhdGEuZnJhbWUnOlx0NzUyIG9icy4gb2YgIDcgdmFyaWFibGVzOlxuICQgcF9pZCAgICAgICAgIDogRmFjdG9yIHcvIDk0IGxldmVscyBcIjEwMl9QKGlmLHRoZW4pXCIsLi46IDYzIDYzIDYzIDYzIDYzIDYzIDYzIDYzIDY0IDY0IC4uLlxuICQgaV9pZCAgICAgICAgIDogRmFjdG9yIHcvIDEyIGxldmVscyBcIjFcIixcIjJcIixcIjNcIixcIjRcIiwuLjogMSAyIDcgOCA5IDEwIDExIDEyIDIgNCAuLi5cbiAkIEJfZ2l2ZW5fQSAgICA6IG51bSAgNTIgNjAgNzkgMCA1MSA3OSA4MCA3NyA5OCA5OCAuLi5cbiAkIEJfZ2l2ZW5fQV9jICA6IG51bSAgMC4wMiAwLjEgMC4yOSAtMC41IDAuMDEgMC4yOSAwLjMgMC4yNyAwLjQ4IDAuNDggLi4uXG4gJCBpZl9BX3RoZW5fQiAgOiBudW0gIDUyIDEgODQgMCA1MSA5NCAxIDgxIDk1IDk3IC4uLlxuICQgaWZfQV90aGVuX0JfYzogbnVtICAwLjAyIC0wLjQ5IDAuMzQgLTAuNSAwLjAxIDAuNDQgLTAuNDkgMC4zMSAwLjQ1IDAuNDcgLi4uXG4gJCByZWxfY29uZCAgICAgOiBGYWN0b3Igdy8gMiBsZXZlbHMgXCJQT1wiLFwiSVJcIjogMSAyIDEgMiAyIDEgMiAxIDEgMSAuLi5cbiJ9 -->
-<pre><code>'data.frame':   752 obs. of  7 variables:
- $ p_id         : Factor w/ 94 levels &quot;102_P(if,then)&quot;,..: 63 63 63 63 63 63 63 63 64 64 ...
- $ i_id         : Factor w/ 12 levels &quot;1&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,..: 1 2 7 8 9 10 11 12 2 4 ...
- $ B_given_A    : num  52 60 79 0 51 79 80 77 98 98 ...
- $ B_given_A_c  : num  0.02 0.1 0.29 -0.5 0.01 0.29 0.3 0.27 0.48 0.48 ...
- $ if_A_then_B  : num  52 1 84 0 51 94 1 81 95 97 ...
- $ if_A_then_B_c: num  0.02 -0.49 0.34 -0.5 0.01 0.44 -0.49 0.31 0.45 0.47 ...
- $ rel_cond     : Factor w/ 2 levels &quot;PO&quot;,&quot;IR&quot;: 1 2 1 2 2 1 2 1 1 1 ...</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>As discussed before, the initial research question was if the Equation holds (i.e., <em>P</em>(if <em>A</em> then <em>B</em>) = <em>P</em>(<em>B</em>|<em>A</em>)). Furthermore, we were interested whether or not the Equation holds even if there is no apparent relationship between <em>A</em> and <em>B</em>? To this end we manipulated the relevance of <em>A</em> for <em>B</em> in the within-subjects variable <code>rel_cond</code>:</p>

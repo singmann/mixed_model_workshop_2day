@@ -1,0 +1,61 @@
+---
+title: "Exercise 1: Multiple Regression"
+author: "Henrik Singmann"
+date: "January 2019 (updated: `r Sys.Date()`)"
+output: pdf_document
+---
+
+## Violent Crime Rates by US State
+
+The data set `USArrests` contains statistics, in arrests per 100,000 residents for assault, murder, and rape in each of the 50 US states in 1973. Also given is the percent of the population living in urban areas.
+
+
+Research question: *Which variables predict murder rates and to what degree?* 
+
+### Design
+
+The data comes with `R`, so we can load it right away. But at first, we load the `tidyverse` package, because these are the functions we want to use throughout this exercise.
+
+```{r, message=FALSE, results='markup'}
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+data(USArrests)  
+glimpse(USArrests)
+```
+
+The `data.frame` has 50 observations (one for each state) on 4 variables. The columns in the data are:
+
+- `Murder`: Murder arrests (per 100,000)
+- `Assault`: Assault arrests (per 100,000)
+- `UrbanPop`: Percent urban population
+- `Rape`: Rape arrests (per 100,000)
+
+Several of the variables show correlations among each other.
+
+```{r, fig.width=5, fig.height=5}
+GGally::ggscatmat(USArrests)
+```
+
+When looking at the zero-order correlation displayed in the upper-triangle of the pairs plot, we see that both, `Assault` and `Rape` appear to predict murder rates.
+
+## Exercise 1: Simple Linear Models
+
+Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable. 
+
+```{r}
+# simple linear models:
+```
+
+Which of the three variables shows a significant effect on murder rates?
+
+
+## Exercise 2: Multiple Regression
+
+Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
+
+```{r}
+## multiple regression model
+```
+
+Which of the three variables now shows a significant effect on murder rates? If there are differences, how can these differences be explained?
+
