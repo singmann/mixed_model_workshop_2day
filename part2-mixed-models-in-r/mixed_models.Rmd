@@ -1,8 +1,8 @@
 ---
 title: "Mixed Models in R"
 subtitle: "A Practical Introduction"
-author: "Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "July 2018"
+author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
+date: "January 2019"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
@@ -32,9 +32,11 @@ options(digits = 4)
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
 2. Identify random-effects grouping factors
-3. Identify which factors/terms vary within levels of each random-effects grouping factor: maximal model
+3. Identify *maximal random-effects structure justified by the design*:
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 4. Choose method for calculating *p*-values and fit maximal model
-5. Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed.
+5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
 ---
 
@@ -90,37 +92,101 @@ class: inline-grey, small
 
 
 ---
-class:small
+class: small
 
-```{r, echo=FALSE, results='hide', message=FALSE}
-load("ssk16_dat_tutorial.rda") 
-str(dat)
-datr <- droplevels(dat[dat$rel_cond != "NE",])
-library("ggplot2")
-afex::set_sum_contrasts()
-library("lme4")
+# Example Data
+
+![](cognition_cutout.png)
+
+
+---
+class: small, inline-grey
+
+### Skovgaard-Olsen et al. (2016)
+
+- Conditional = *if-then* statement; e.g., If global warning continues, London will be flooded.
+- Bayesian reasoning often assumes 'the Equation': *P*(if *A* then *B*) = *P*(*B*|*A*)
+- Our question: Does 'the Equation' hold? 
+- Participants provide idiosyncratic estimates of both *P*(if *A* then *B*) and *P*(*B*|*A*).
+
+- ~100 participants recruited via `crowdflower.com` worked on 12 items:
+
+> Sophia's scenario: Sophia wishes to find a nice present for her 13-year-old son, Tim, for Christmas. She is running on a tight budget, but she knows that Tim loves participating in live role-playing in the forest and she is really skilled at sewing the orc costumes he needs. Unfortunately, she will not be able to afford the leather parts that such costumes usually have, but she will still be able to make them look nice.
+
+--
+
+(1) *P*(*B*|*A*) (`B_given_A`):
+  > Suppose Sophia makes Tim an orc costume.
+  > Under this assumption, how probable is it that the following sentence is true:   
+  > Tim will be excited about his present.
+
+--
+
+(2) *P*(if *A* then *B*) (`if_A_then_B`):
+  > Could you please rate the probability that the following sentence is true:   
+  > IF Sophia makes Tim an orc costume, THEN he will be excited about his present.
+
+---
+
+class: small 
+
+.pull-left[
+### Skovgaard-Olsen et al. (2016)
+
+- Does 'the Equation' (i.e., *P*(if *A* then *B*) = *P*(*B*|*A*)) hold? 
+
+- Participants provided idiosyncratic estimates of *P*(if *A* then *B*) (`if_A_then_B`) and *P*(*B*|*A*) (`B_given_A`) for each item.
+- Each participant worked on 12 items.
+
+
+```{r, message=FALSE}
+# Session -> Set Working Directory ->
+# -> To Source File Location
+load("ssk16_dat_prepared_ex2.rda") 
+# full data: https://osf.io/j4swp/
+str(dat2, width=50, strict.width = "cut")
 ```
+
+]
+
+.pull-right[
+
+```{r, fig.height=6, dev='svg', message=FALSE}
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+ggplot(data = dat2) + 
+  geom_point(mapping = aes(x = B_given_A, 
+                           y = if_A_then_B), 
+             alpha = 0.2, pch = 16, size = 3) + 
+  coord_fixed()
+```
+
+]
+
+
+---
+class:small
 
 
 # Example Data: Skovgaard-Olsen et al. (2016)
 
 - Is there an overall association between *P*(if *A* then *B*) and *P*(*B*|*A*)?
-- For technical reason, we work with scaled variables. `lme4` works better with variables near -1 to 1.
+- For technical reason, we work with scaled variables (i.e., $(x-50)/100$). `lme4` works better with variables near -1 to 1.
 
 .pull-left[
 
 ```{r}
-m_fixed <- lm(if_A_then_B_c ~ B_given_A_c, datr)
+m_fixed <- lm(if_A_then_B_c ~ B_given_A_c, dat2)
 summary(m_fixed)
 ```
 ]
 .pull-right[
 
-```{r, echo=FALSE, dpi=500, fig.width=3.5, fig.height=3.5}
-par(pty="s")
-limits <- c(-0.5, 0.5)
-plot(if_A_then_B_c ~ B_given_A_c, datr, asp = 1, ylim=limits, xlim=limits)
-abline(m_fixed)
+```{r, echo=FALSE, dpi=300, fig.width=4, fig.height=4, dev='svg'}
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed() 
 ```
 
 $$y=\beta_0 + \beta_{B|A}X_{B|A} + \epsilon$$
@@ -141,10 +207,11 @@ $$y=\beta_0 + \beta_{B|A}X_{B|A} + \epsilon$$
 ]
 
 .pull-right2[
-```{r, echo=FALSE, dpi=300, fig.width=3.5, fig.height=4}
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, asp = 1, ylim=limits, xlim=limits)
-abline(m_fixed)
+```{r, echo=FALSE, fig.width=3.5, fig.height=4, dev='svg'}
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
 ```
 ]
 
@@ -157,7 +224,7 @@ $$y=\beta_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + \epsilon$$
 - $S_{B|A}$ provides each participant with their own regression weight: overall $\beta_{B|A}$ plus idiosyncratic $S_{B|A}$.
 - As parameter, model estimates variance of random effects vector, $\sigma^2_{S_{B|A}}$.
 - As $S_{B|A}$ alters the regression slope $\beta_{B|A}$, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), dat2)`
 
 ---
 class: small
@@ -174,17 +241,18 @@ $$y=\beta_0 + \beta_{B|A}X_{B|A} + \epsilon$$
 ]
 
 .pull-right2[
-```{r, echo=FALSE, dpi=500, fig.width=3.5, fig.height=4, warning=FALSE}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, 
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
+```{r, echo=FALSE, dpi=500, fig.width=3.5, fig.height=4, warning=FALSE, message=FALSE}
+library("lme4")
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
 ```
 ]
 
@@ -195,7 +263,7 @@ $$y=\beta_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + \epsilon$$
 - $S_{B|A}$ provides each participant with their own regression weight: overall $\beta_{B|A}$ plus idiosyncratic $S_{B|A}$.
 - As parameter, model estimates variance of random effects vector, $\sigma^2_{S_{B|A}}$.
 - As $S_{B|A}$ alters the regression slope $\beta_{B|A}$, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), dat2)`
 
 
 ---
@@ -212,20 +280,19 @@ $$y=\beta_0 + S_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + \epsilon$$
 $$\left( \begin{matrix} S_0 \\ S_{B|A} \end{matrix} \right)
  \sim \mathcal{N}\left( \left[ \begin{matrix} 0 \\ 0 \end{matrix} \right] , \left[ \begin{matrix} \sigma^2_{S_0}&\rho_{S_{0},S_{B|A}}\sigma_{S_{0}}\sigma_{S_{B|A}} \\ \rho_{S_{B|A},S_{0}}\sigma_{S_{0}}\sigma_{S_{B|A}}&\sigma^2_{S_{B|A}} \end{matrix} \right] \right)$$
 
-Each $S_i$ idiosyncratic intercept & slope: `lmer(if_A_then_B ~ B_given_A + (B_given_A|p_id), datr)`
+Each $S_i$ idiosyncratic intercept & slope: `lmer(if_A_then_B ~ B_given_A + (B_given_A|p_id), dat2)`
 
-```{r, echo=FALSE, dpi=300, fig.width=3.5, fig.height=3.5, warning=FALSE, out.width='25%'}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr,
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
+```{r, echo=FALSE, dpi=300, fig.width=3.5, fig.height=3.5, warning=FALSE, out.width='20%'}
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed() 
 ```
 
 ---
@@ -241,18 +308,52 @@ abline(m_fixed)
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
 
 ```{r, echo=FALSE, dpi=300, fig.width=3.5, fig.height=4, warning=FALSE , out.width='25%'}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr,
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
 ```
+
+---
+class: small
+
+```{r}
+library("lme4")
+m_r <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
+summary(m_r)
+```
+
+----
+
+# Exercise 2: Fitting First Mixed Model
+
+- Open `exercises/exercise_2_FIRST.Rmd`.
+
+- **Task 1:** Goal is to recreate the first two models from the slides, add one more model, and inspect the results.
+
+- Dependent variable: `if_A_then_B_c`
+- Fixed effect: `B_given_A_c`
+
+1. The first model only has by-participant (i.e., by `p_id`) random-slopes for `B_given_A_c`.
+2. The second model has has by-participant random-slopes for `B_given_A_c` and random-intercepts, as well as the correlation between the random-effects parameters.
+3. The third (and new) model only has by-participant random intercepts and no random slopes.
+
+
+- Which model shows a singular fit or other convergence problems? Do you have an idea where the convergence problems come from?
+- What do the parameter estimates of the random effects mean?
+- Does the choice of random-effects structure affect the fixed-effect estimates and/or inferential statistics?
+- Which model do you think would be the best to report?
+
+
+- **Task 2**: Suppressing the Correlation. The only model we have not yet considered for this data is a model without correlation among the random-effects parameters. Can you set it up?
+
+
+
+
 ---
 class: small
 ### Example Data Extended: Skovgaard-Olsen et al. (2016)
@@ -286,10 +387,10 @@ class: small
 # Example Data: Skovgaard-Olsen et al. (2016)
 
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE, out.width='80%'}
-ggplot(datr, aes(y = if_A_then_B_c, x = B_given_A_c)) +
-  geom_point() +
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) +
   facet_wrap(~ rel_cond) + 
-  theme_light() + coord_fixed()
+  coord_fixed()
 ```
 
 ---
@@ -300,24 +401,26 @@ class: small
 ### Fixed Effects Model
 
 ```{r}
+afex::set_sum_contrasts()
 m_fixed <- lm(if_A_then_B_c ~ 
-                B_given_A_c*rel_cond, datr)
+                B_given_A_c*rel_cond, dat2)
 summary(m_fixed)
 ```
 ]
 .pull-right[
 
-```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4}
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE}
+slopes <- data_frame(
+  intercept = coef(m_fixed)[1] + c(1, -1)*coef(m_fixed)[3],
+  slope = coef(m_fixed)[2] + c(1, -1)*coef(m_fixed)[4],
+  rel_cond = factor(c("PO", "IR"), levels = c("PO", "IR"))
+)
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope),
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 ```
 
 $$y=\beta_0 + \beta_{B|A}X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + \epsilon$$
@@ -339,16 +442,12 @@ $$y=\beta_0 + \beta_{B|A}X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + \epsilon$$
 
 .pull-right[
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4}
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 ```
 ]
 
@@ -361,7 +460,7 @@ $$y=\beta_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + 
 - $S_{B|A}$ provides each participant with their own regression weight: overall $\beta_{B|A}$ plus idiosyncratic $S_{B|A}$.
 - As parameter, model estimates variance of random effects vector, $\sigma^2_{S_{B|A}}$.
 - As $S_{B|A}$ alters the regression slope $\beta_{B|A}$, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), dat2)`
 
 ---
 class: small
@@ -379,26 +478,30 @@ $$y=\beta_0 + \beta_{B|A}X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + \epsilon$$
 
 .pull-right[
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (0+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (0+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 ```
 ]
 
@@ -409,7 +512,7 @@ $$y=\beta_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + 
 - $S_{B|A}$ provides each participant with their own regression weight: overall $\beta_{B|A}$ plus idiosyncratic $S_{B|A}$.
 - As parameter, model estimates variance of random effects vector, $\sigma^2_{S_{B|A}}$.
 - As $S_{B|A}$ alters the regression slope $\beta_{B|A}$, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), dat2)`
 
 
 ---
@@ -427,30 +530,33 @@ $$\left( \begin{matrix} S_0 \\ S_{B|A} \end{matrix} \right)
  \sim \mathcal{N}\left( \left[ \begin{matrix} 0 \\ 0 \end{matrix} \right] , \left[ \begin{matrix} \sigma^2_{S_0}&\rho_{S_{0},S_{B|A}}\sigma_{S_{0}}\sigma_{S_{B|A}} \\ \rho_{S_{B|A},S_{0}}\sigma_{S_{0}}\sigma_{S_{B|A}}&\sigma^2_{S_{B|A}} \end{matrix} \right] \right)$$
 
 Each $S_i$ idiosyncratic intercept & slope:  
-`lmer(if_A_then_B ~ B_given_A*rel_cond + (B_given_A|p_id), datr)`
+`lmer(if_A_then_B ~ B_given_A*rel_cond + (B_given_A|p_id), dat2)`
 
 .pull-left[
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=3.5, warning=FALSE}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (1+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 ```
 ]
 
@@ -467,7 +573,7 @@ $$y=\beta_0 + S_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + (\beta_{r}+ S_{r})X_{r} + (\
 library("lme4")
 m_p_max <- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
-         (B_given_A_c*rel_cond|p_id), datr)
+         (B_given_A_c*rel_cond|p_id), dat2)
 summary(m_p_max)$varcor
 summary(m_p_max)$coefficients
 
@@ -476,26 +582,29 @@ summary(m_p_max)$coefficients
 
 .pull-right[
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE}
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+rnd_coefs <- as_tibble(coef(m_p_max)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  theme_light() + coord_fixed() +
+  theme(text = element_text(size=20))
 ```
 ]
 
@@ -519,7 +628,7 @@ $$y=\beta_0 + S_0 + I_0 + (\beta_{B|A} + S_{B|A} + I_{B|A})X_{B|A} + (\beta_{r} 
 m_max <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
                 (B_given_A_c*rel_cond|p_id) + 
                 (B_given_A_c*rel_cond|i_id), 
-              datr)
+              dat2)
 ```
 
 
@@ -536,11 +645,8 @@ class:small
 ### Effect of Partial-Pooling / Hierarchical Shrinkage / Regularization
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
-library("dplyr")
 library("broom")
-library("ggplot2")
-library("tidyr")
-no_pooling_estimates <- datr %>% 
+no_pooling_estimates <- dat2 %>% 
   group_by(p_id, rel_cond) %>% 
   do(tidy(lm(if_A_then_B_c~B_given_A_c, .))) %>% 
   filter(term == "B_given_A_c") %>% 
@@ -665,6 +771,14 @@ class: small, inline-grey
 - whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies
 
 ---
+
+class: center, middle, inverse
+
+# Exercise 2 PP: Pooling Revisited
+
+(see `exercises\exercise2_PP.Rmd` in folder or handout)
+
+---
 class: center, middle, inverse
 
 # Practical Issues with Mixed Models in `R`
@@ -687,10 +801,10 @@ Methods do not differ for example data:
 
 ```{r, eval=FALSE}
 library("afex")
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "KR") 
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "S") 
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "LRT") 
-# mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "PB") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "KR") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "S") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "LRT") 
+# mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "PB") 
 ```
 
 ---
@@ -740,7 +854,7 @@ library("afex")
 m_red <- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id), 
-  datr, method = "S", 
+  dat2, method = "S", 
   expand_re = TRUE)
 ```
 ```{r}
@@ -754,36 +868,71 @@ m_red
 ```
 
 ```{r, echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE}
-rnd_coefs <- coef(m_red$full_model)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-limits <- c(-0.5, 0.5)
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,4] + rnd_coefs[i,6] + rnd_coefs[i,2], 
-         b = rnd_coefs[i,5] + rnd_coefs[i,1] + rnd_coefs[i,7] + rnd_coefs[i,3],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,4] - (rnd_coefs[i,6] + rnd_coefs[i,2]), 
-         b = rnd_coefs[i,5] + rnd_coefs[i,1] - (rnd_coefs[i,7] + rnd_coefs[i,3]),
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+rnd_coefs <- as_tibble(coef(m_red$full_model)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + 
+      rnd_coefs$rel_cond1 + rnd_coefs$re1.rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1` + rnd_coefs$re1.B_given_A_c + rnd_coefs$re1.B_given_A_c_by_rel_cond1
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - 
+      (rnd_coefs$rel_cond1 + rnd_coefs$re1.rel_cond1),
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$re1.B_given_A_c - (rnd_coefs$`B_given_A_c:rel_cond1` + rnd_coefs$re1.B_given_A_c_by_rel_cond1)
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 ```
 ]
 
 ---
 
+## Using `afex` I
+
+```{r}
+library("afex")
+ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
+              method = "S") 
+
+ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
+              method = "S", expand_re = TRUE) 
+
+```
+
+---
+
+## Using `afex`: ANOVA Table
+
+```{r}
+ma_2 ## or: nice(ma_2)
+```
+
+- Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
+
+---
+class: small
+
+```{r}
+summary(ma_2) ## lme4 summary() output
+```
+
+---
+
 class: center, middle, inverse
 
-# Exercise 2
+# Exercise 2 MRE: Maximal Random-Effects Structure
 
-(see handout or file in `exercises` folder)
+(see `exercises\exercise2_MRE.Rmd` in folder or handout)
 
 ---
 class: small, inline-grey
@@ -814,7 +963,7 @@ m_max2 <- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id) + 
     (B_given_A_c*rel_cond||i_id), 
-  datr, method = 'S', expand_re = TRUE)
+  dat2, method = 'S', expand_re = TRUE)
 nice(m_max2) %>% as.data.frame()
 ```
 
@@ -823,6 +972,7 @@ nice(m_max2) %>% as.data.frame()
 .pull-right[
 
 ```{r}
+library("emmeans")
 emm_options(lmer.df = "asymptotic") 
 # or "Kenward-Roger" or "Satterthwaite"
 emmeans(m_max2, "rel_cond")
@@ -993,7 +1143,7 @@ $$\rho=\frac{\sigma^2_S}{\sigma^2_S+\sigma^2_\epsilon}$$
 
 .pull-right[
 ```{r}
-m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -1013,7 +1163,7 @@ class: small
 
 .pull-left[
 ```{r}
-m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -1028,7 +1178,7 @@ icc(m1)
 .pull-right[
 ```{r, warning=FALSE, message=FALSE}
 m2 <- lmer(if_A_then_B_c ~ 1 + 
-             (rel_cond:B_given_A_c|p_id), datr)
+             (rel_cond:B_given_A_c|p_id), dat2)
 # summary(m2)
  # Groups   Name                   Variance Std.Dev. Corr       
  # p_id     (Intercept)            0.0398   0.200               

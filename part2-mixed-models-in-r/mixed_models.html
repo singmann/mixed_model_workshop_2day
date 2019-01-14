@@ -3,7 +3,7 @@
   <head>
     <title>Mixed Models in R</title>
     <meta charset="utf-8">
-    <meta name="author" content="Henrik Singmann (University of Zurich) Twitter: @HenrikSingmann" />
+    <meta name="author" content="Henrik Singmann (University of Warwick) Twitter: @HenrikSingmann" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
     <link rel="stylesheet" href="my-theme.css" type="text/css" />
@@ -14,8 +14,8 @@ class: center, middle, inverse, title-slide
 
 # Mixed Models in R
 ## A Practical Introduction
-### Henrik Singmann (University of Zurich)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### July 2018
+### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
+### January 2019
 
 ---
 
@@ -29,9 +29,11 @@ class: center, middle, inverse, title-slide
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
 2. Identify random-effects grouping factors
-3. Identify which factors/terms vary within levels of each random-effects grouping factor: maximal model
+3. Identify *maximal random-effects structure justified by the design*:
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 4. Choose method for calculating *p*-values and fit maximal model
-5. Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed.
+5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
 ---
 
@@ -87,28 +89,114 @@ class: inline-grey, small
 
 
 ---
+class: small
+
+# Example Data
+
+![](cognition_cutout.png)
+
+
+---
+class: small, inline-grey
+
+### Skovgaard-Olsen et al. (2016)
+
+- Conditional = *if-then* statement; e.g., If global warning continues, London will be flooded.
+- Bayesian reasoning often assumes 'the Equation': *P*(if *A* then *B*) = *P*(*B*|*A*)
+- Our question: Does 'the Equation' hold? 
+- Participants provide idiosyncratic estimates of both *P*(if *A* then *B*) and *P*(*B*|*A*).
+
+- ~100 participants recruited via `crowdflower.com` worked on 12 items:
+
+&gt; Sophia's scenario: Sophia wishes to find a nice present for her 13-year-old son, Tim, for Christmas. She is running on a tight budget, but she knows that Tim loves participating in live role-playing in the forest and she is really skilled at sewing the orc costumes he needs. Unfortunately, she will not be able to afford the leather parts that such costumes usually have, but she will still be able to make them look nice.
+
+--
+
+(1) *P*(*B*|*A*) (`B_given_A`):
+  &gt; Suppose Sophia makes Tim an orc costume.
+  &gt; Under this assumption, how probable is it that the following sentence is true:   
+  &gt; Tim will be excited about his present.
+
+--
+
+(2) *P*(if *A* then *B*) (`if_A_then_B`):
+  &gt; Could you please rate the probability that the following sentence is true:   
+  &gt; IF Sophia makes Tim an orc costume, THEN he will be excited about his present.
+
+---
+
+class: small 
+
+.pull-left[
+### Skovgaard-Olsen et al. (2016)
+
+- Does 'the Equation' (i.e., *P*(if *A* then *B*) = *P*(*B*|*A*)) hold? 
+
+- Participants provided idiosyncratic estimates of *P*(if *A* then *B*) (`if_A_then_B`) and *P*(*B*|*A*) (`B_given_A`) for each item.
+- Each participant worked on 12 items.
+
+
+
+```r
+# Session -&gt; Set Working Directory -&gt;
+# -&gt; To Source File Location
+load("ssk16_dat_prepared_ex2.rda") 
+# full data: https://osf.io/j4swp/
+str(dat2, width=50, strict.width = "cut")
+```
+
+```
+## 'data.frame':	752 obs. of  7 variables:
+##  $ p_id         : Factor w/ 94 levels "102_P(if"..
+##  $ i_id         : Factor w/ 12 levels "1","2",""..
+##  $ B_given_A    : num  52 60 79 0 51 79 80 77 98..
+##  $ B_given_A_c  : num  0.02 0.1 0.29 -0.5 0.01 0..
+##  $ if_A_then_B  : num  52 1 84 0 51 94 1 81 95 9..
+##  $ if_A_then_B_c: num  0.02 -0.49 0.34 -0.5 0.01..
+##  $ rel_cond     : Factor w/ 2 levels "PO","IR": ..
+```
+
+]
+
+.pull-right[
+
+
+```r
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+ggplot(data = dat2) + 
+  geom_point(mapping = aes(x = B_given_A, 
+                           y = if_A_then_B), 
+             alpha = 0.2, pch = 16, size = 3) + 
+  coord_fixed()
+```
+
+![](mixed_models_files/figure-html/unnamed-chunk-2-1.svg)&lt;!-- --&gt;
+
+]
+
+
+---
 class:small
-
-
 
 
 # Example Data: Skovgaard-Olsen et al. (2016)
 
 - Is there an overall association between *P*(if *A* then *B*) and *P*(*B*|*A*)?
-- For technical reason, we work with scaled variables. `lme4` works better with variables near -1 to 1.
+- For technical reason, we work with scaled variables (i.e., `\((x-50)/100\)`). `lme4` works better with variables near -1 to 1.
 
 .pull-left[
 
 
 ```r
-m_fixed &lt;- lm(if_A_then_B_c ~ B_given_A_c, datr)
+m_fixed &lt;- lm(if_A_then_B_c ~ B_given_A_c, dat2)
 summary(m_fixed)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = if_A_then_B_c ~ B_given_A_c, data = datr)
+## lm(formula = if_A_then_B_c ~ B_given_A_c, data = dat2)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
@@ -128,7 +216,7 @@ summary(m_fixed)
 ]
 .pull-right[
 
-![](mixed_models_files/figure-html/unnamed-chunk-3-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-4-1.svg)&lt;!-- --&gt;
 
 `$$y=\beta_0 + \beta_{B|A}X_{B|A} + \epsilon$$`
 
@@ -148,7 +236,7 @@ class: small
 ]
 
 .pull-right2[
-![](mixed_models_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-5-1.svg)&lt;!-- --&gt;
 ]
 
 --
@@ -160,7 +248,7 @@ class: small
 - `\(S_{B|A}\)` provides each participant with their own regression weight: overall `\(\beta_{B|A}\)` plus idiosyncratic `\(S_{B|A}\)`.
 - As parameter, model estimates variance of random effects vector, `\(\sigma^2_{S_{B|A}}\)`.
 - As `\(S_{B|A}\)` alters the regression slope `\(\beta_{B|A}\)`, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), dat2)`
 
 ---
 class: small
@@ -177,7 +265,7 @@ class: small
 ]
 
 .pull-right2[
-![](mixed_models_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
 ]
 
 ### A First Mixed Effects Model
@@ -187,7 +275,7 @@ class: small
 - `\(S_{B|A}\)` provides each participant with their own regression weight: overall `\(\beta_{B|A}\)` plus idiosyncratic `\(S_{B|A}\)`.
 - As parameter, model estimates variance of random effects vector, `\(\sigma^2_{S_{B|A}}\)`.
 - As `\(S_{B|A}\)` alters the regression slope `\(\beta_{B|A}\)`, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A + (0+B_given_A|p_id), dat2)`
 
 
 ---
@@ -204,9 +292,14 @@ First model did not allow for different intercepts, `\(\beta_0\)`, for each part
 `$$\left( \begin{matrix} S_0 \\ S_{B|A} \end{matrix} \right)
  \sim \mathcal{N}\left( \left[ \begin{matrix} 0 \\ 0 \end{matrix} \right] , \left[ \begin{matrix} \sigma^2_{S_0}&amp;\rho_{S_{0},S_{B|A}}\sigma_{S_{0}}\sigma_{S_{B|A}} \\ \rho_{S_{B|A},S_{0}}\sigma_{S_{0}}\sigma_{S_{B|A}}&amp;\sigma^2_{S_{B|A}} \end{matrix} \right] \right)$$`
 
-Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B ~ B_given_A + (B_given_A|p_id), datr)`
+Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B ~ B_given_A + (B_given_A|p_id), dat2)`
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-6-1.png" width="25%" /&gt;
+
+```
+## singular fit
+```
+
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-7-1.png" width="20%" /&gt;
 
 ---
 
@@ -220,7 +313,82 @@ Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B ~ B_given_
 - assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding over-fitting
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-7-1.png" width="25%" /&gt;
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-8-1.png" width="25%" /&gt;
+
+---
+class: small
+
+
+```r
+library("lme4")
+m_r &lt;- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
+```
+
+```
+## singular fit
+```
+
+```r
+summary(m_r)
+```
+
+```
+## Linear mixed model fit by REML ['lmerMod']
+## Formula: if_A_then_B_c ~ B_given_A_c + (1 + B_given_A_c | p_id)
+##    Data: dat2
+## 
+## REML criterion at convergence: 256.9
+## 
+## Scaled residuals: 
+##    Min     1Q Median     3Q    Max 
+## -2.870 -0.280  0.179  0.568  3.323 
+## 
+## Random effects:
+##  Groups   Name        Variance Std.Dev. Corr
+##  p_id     (Intercept) 0.00329  0.0574       
+##           B_given_A_c 0.00916  0.0957   1.00
+##  Residual             0.07704  0.2776       
+## Number of obs: 752, groups:  p_id, 94
+## 
+## Fixed effects:
+##             Estimate Std. Error t value
+## (Intercept)  -0.0614     0.0119   -5.17
+## B_given_A_c   0.7252     0.0299   24.29
+## 
+## Correlation of Fixed Effects:
+##             (Intr)
+## B_given_A_c 0.035 
+## convergence code: 0
+## singular fit
+```
+
+----
+
+# Exercise 2: Fitting First Mixed Model
+
+- Open `exercises/exercise_2_FIRST.Rmd`.
+
+- **Task 1:** Goal is to recreate the first two models from the slides, add one more model, and inspect the results.
+
+- Dependent variable: `if_A_then_B_c`
+- Fixed effect: `B_given_A_c`
+
+1. The first model only has by-participant (i.e., by `p_id`) random-slopes for `B_given_A_c`.
+2. The second model has has by-participant random-slopes for `B_given_A_c` and random-intercepts, as well as the correlation between the random-effects parameters.
+3. The third (and new) model only has by-participant random intercepts and no random slopes.
+
+
+- Which model shows a singular fit or other convergence problems? Do you have an idea where the convergence problems come from?
+- What do the parameter estimates of the random effects mean?
+- Does the choice of random-effects structure affect the fixed-effect estimates and/or inferential statistics?
+- Which model do you think would be the best to report?
+
+
+- **Task 2**: Suppressing the Correlation. The only model we have not yet considered for this data is a model without correlation among the random-effects parameters. Can you set it up?
+
+
+
+
 ---
 class: small
 ### Example Data Extended: Skovgaard-Olsen et al. (2016)
@@ -253,7 +421,7 @@ class: small
 
 # Example Data: Skovgaard-Olsen et al. (2016)
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-8-1.png" width="80%" /&gt;
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-10-1.png" width="80%" /&gt;
 
 ---
 class: small
@@ -264,15 +432,23 @@ class: small
 
 
 ```r
+afex::set_sum_contrasts()
+```
+
+```
+## setting contr.sum globally: options(contrasts=c('contr.sum', 'contr.poly'))
+```
+
+```r
 m_fixed &lt;- lm(if_A_then_B_c ~ 
-                B_given_A_c*rel_cond, datr)
+                B_given_A_c*rel_cond, dat2)
 summary(m_fixed)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = if_A_then_B_c ~ B_given_A_c * rel_cond, data = datr)
+## lm(formula = if_A_then_B_c ~ B_given_A_c * rel_cond, data = dat2)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
@@ -294,7 +470,7 @@ summary(m_fixed)
 ]
 .pull-right[
 
-![](mixed_models_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
 
 `$$y=\beta_0 + \beta_{B|A}X_{B|A} + \beta_{r}X_{r} + \beta_{I}X_{I} + \epsilon$$`
 
@@ -314,7 +490,7 @@ class: small
 ]
 
 .pull-right[
-![](mixed_models_files/figure-html/unnamed-chunk-11-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
 ]
 
 --
@@ -326,7 +502,7 @@ class: small
 - `\(S_{B|A}\)` provides each participant with their own regression weight: overall `\(\beta_{B|A}\)` plus idiosyncratic `\(S_{B|A}\)`.
 - As parameter, model estimates variance of random effects vector, `\(\sigma^2_{S_{B|A}}\)`.
 - As `\(S_{B|A}\)` alters the regression slope `\(\beta_{B|A}\)`, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), dat2)`
 
 ---
 class: small
@@ -343,7 +519,7 @@ class: small
 ]
 
 .pull-right[
-![](mixed_models_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
 ]
 
 ### A First Mixed Effects Model
@@ -353,7 +529,7 @@ class: small
 - `\(S_{B|A}\)` provides each participant with their own regression weight: overall `\(\beta_{B|A}\)` plus idiosyncratic `\(S_{B|A}\)`.
 - As parameter, model estimates variance of random effects vector, `\(\sigma^2_{S_{B|A}}\)`.
 - As `\(S_{B|A}\)` alters the regression slope `\(\beta_{B|A}\)`, also known as *random slope*.
-- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), datr)`
+- In `lme4::lmer` syntax: `lmer(if_A_then_B ~ B_given_A*rel_cond + (0+B_given_A|p_id), dat2)`
 
 
 ---
@@ -371,10 +547,10 @@ First model did not allow for different intercepts, `\(\beta_0\)`, for each part
  \sim \mathcal{N}\left( \left[ \begin{matrix} 0 \\ 0 \end{matrix} \right] , \left[ \begin{matrix} \sigma^2_{S_0}&amp;\rho_{S_{0},S_{B|A}}\sigma_{S_{0}}\sigma_{S_{B|A}} \\ \rho_{S_{B|A},S_{0}}\sigma_{S_{0}}\sigma_{S_{B|A}}&amp;\sigma^2_{S_{B|A}} \end{matrix} \right] \right)$$`
 
 Each `\(S_i\)` idiosyncratic intercept &amp; slope:  
-`lmer(if_A_then_B ~ B_given_A*rel_cond + (B_given_A|p_id), datr)`
+`lmer(if_A_then_B ~ B_given_A*rel_cond + (B_given_A|p_id), dat2)`
 
 .pull-left[
-![](mixed_models_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
 ]
 
 ---
@@ -391,7 +567,14 @@ class: small
 library("lme4")
 m_p_max &lt;- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
-         (B_given_A_c*rel_cond|p_id), datr)
+         (B_given_A_c*rel_cond|p_id), dat2)
+```
+
+```
+## singular fit
+```
+
+```r
 summary(m_p_max)$varcor
 ```
 
@@ -418,7 +601,7 @@ summary(m_p_max)$coefficients
 ]
 
 .pull-right[
-![](mixed_models_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-17-1.png)&lt;!-- --&gt;
 ]
 
 ---
@@ -442,7 +625,11 @@ Mixed models allow multiple independent random effects (where `\(I\)` are vector
 m_max &lt;- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
                 (B_given_A_c*rel_cond|p_id) + 
                 (B_given_A_c*rel_cond|i_id), 
-              datr)
+              dat2)
+```
+
+```
+## singular fit
 ```
 
 
@@ -458,7 +645,7 @@ summary(m_max)
 ## Linear mixed model fit by REML ['lmerMod']
 ## Formula: if_A_then_B_c ~ B_given_A_c * rel_cond + (B_given_A_c * rel_cond |  
 ##     p_id) + (B_given_A_c * rel_cond | i_id)
-##    Data: datr
+##    Data: dat2
 ## 
 ## REML criterion at convergence: -387.9
 ## 
@@ -491,6 +678,8 @@ summary(m_max)
 ## B_given_A_c  0.086              
 ## rel_cond1   -0.225 -0.888       
 ## B_gvn_A_:_1 -0.881 -0.096  0.194
+## convergence code: 0
+## singular fit
 ```
 
 ---
@@ -504,7 +693,7 @@ class:small
 
 Comparison of no-pooling and partial-pooling (i.e., LMM) estimates for `B_given_A` slopes:
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-19-1.png" width="500px" height="300px" /&gt;
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-21-1.png" width="500px" height="300px" /&gt;
 
 ]
 
@@ -513,7 +702,7 @@ Comparison of no-pooling and partial-pooling (i.e., LMM) estimates for `B_given_
 
 Distribution of no-pooling and partial-pooling (i.e., LMM) estimates for `B_given_A` slopes:
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-20-1.png" width="400px" height="350px" /&gt;
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-22-1.png" width="400px" height="350px" /&gt;
 ]
 
 - If individual effects can be assumed to come from one normal distribution, partial-pooling provides better estimates than no-pooling even on the individual level (at least on average).
@@ -522,7 +711,7 @@ Distribution of no-pooling and partial-pooling (i.e., LMM) estimates for `B_give
 ---
 class:small
 
-&lt;img src="mixed_models_files/figure-html/unnamed-chunk-21-1.png" width="1000px" height="500px" /&gt;
+&lt;img src="mixed_models_files/figure-html/unnamed-chunk-23-1.png" width="1000px" height="500px" /&gt;
 
 - from Tristan Mahr: https://tjmahr.github.io/plotting-partial-pooling-in-mixed-effects-models/
 
@@ -569,6 +758,14 @@ class: small, inline-grey
 - whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies
 
 ---
+
+class: center, middle, inverse
+
+# Exercise 2 PP: Pooling Revisited
+
+(see `exercises\exercise2_PP.Rmd` in folder or handout)
+
+---
 class: center, middle, inverse
 
 # Practical Issues with Mixed Models in `R`
@@ -592,10 +789,10 @@ Methods do not differ for example data:
 
 ```r
 library("afex")
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "KR") 
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "S") 
-mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "LRT") 
-# mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "PB") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "KR") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "S") 
+mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "LRT") 
+# mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "PB") 
 ```
 
 ---
@@ -644,7 +841,7 @@ class: small
 m_red &lt;- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id), 
-  datr, method = "S", 
+  dat2, method = "S", 
   expand_re = TRUE)
 ```
 
@@ -673,7 +870,7 @@ m_red
 ## 
 ## Model: if_A_then_B_c ~ B_given_A_c * rel_cond + (B_given_A_c * rel_cond || 
 ## Model:     p_id)
-## Data: datr
+## Data: dat2
 ##                 Effect       df          F p.value
 ## 1          B_given_A_c 1, 89.04 484.41 ***  &lt;.0001
 ## 2             rel_cond 1, 89.44 174.44 ***  &lt;.0001
@@ -682,16 +879,130 @@ m_red
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-27-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-29-1.png)&lt;!-- --&gt;
 ]
+
+---
+
+## Using `afex` I
+
+
+```r
+library("afex")
+ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
+              method = "S") 
+```
+
+```
+## Numerical variables NOT centered on 0: B_given_A_c
+## If in interactions, interpretation of lower order (e.g., main) effects difficult.
+```
+
+```
+## Fitting one lmer() model.
+```
+
+```
+## singular fit
+```
+
+```
+## [DONE]
+## Calculating p-values. [DONE]
+```
+
+```r
+ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
+              method = "S", expand_re = TRUE) 
+```
+
+```
+## Numerical variables NOT centered on 0: B_given_A_c
+## If in interactions, interpretation of lower order (e.g., main) effects difficult.
+```
+
+```
+## Fitting one lmer() model. [DONE]
+## Calculating p-values. [DONE]
+```
+
+---
+
+## Using `afex`: ANOVA Table
+
+
+```r
+ma_2 ## or: nice(ma_2)
+```
+
+```
+## Mixed Model Anova Table (Type 3 tests, S-method)
+## 
+## Model: if_A_then_B_c ~ B_given_A_c * rel_cond + (B_given_A_c * rel_cond || 
+## Model:     p_id)
+## Data: dat2
+##                 Effect       df          F p.value
+## 1          B_given_A_c 1, 89.04 484.41 ***  &lt;.0001
+## 2             rel_cond 1, 89.44 174.44 ***  &lt;.0001
+## 3 B_given_A_c:rel_cond 1, 85.45  42.24 ***  &lt;.0001
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+```
+
+- Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
+
+---
+class: small
+
+
+```r
+summary(ma_2) ## lme4 summary() output
+```
+
+```
+## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
+## Formula: if_A_then_B_c ~ B_given_A_c * rel_cond + (1 + re1.B_given_A_c +  
+##     re1.rel_cond1 + re1.B_given_A_c_by_rel_cond1 || p_id)
+##    Data: data
+## 
+## REML criterion at convergence: -129.4
+## 
+## Scaled residuals: 
+##    Min     1Q Median     3Q    Max 
+## -3.725 -0.377 -0.010  0.279  3.461 
+## 
+## Random effects:
+##  Groups   Name                         Variance Std.Dev.
+##  p_id     (Intercept)                  0.01215  0.1102  
+##  p_id.1   re1.B_given_A_c              0.03086  0.1757  
+##  p_id.2   re1.rel_cond1                0.00708  0.0842  
+##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.03758  0.1939  
+##  Residual                              0.02968  0.1723  
+## Number of obs: 752, groups:  p_id, 94
+## 
+## Fixed effects:
+##                       Estimate Std. Error      df t value Pr(&gt;|t|)    
+## (Intercept)            -0.0735     0.0135 92.5542   -5.47  3.9e-07 ***
+## B_given_A_c             0.6091     0.0277 89.0360   22.01  &lt; 2e-16 ***
+## rel_cond1               0.1488     0.0113 89.4409   13.21  &lt; 2e-16 ***
+## B_given_A_c:rel_cond1   0.1884     0.0290 85.4485    6.50  5.1e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Correlation of Fixed Effects:
+##             (Intr) B_g_A_ rl_cn1
+## B_given_A_c -0.087              
+## rel_cond1    0.036 -0.140       
+## B_gvn_A_:_1 -0.113  0.012 -0.100
+```
 
 ---
 
 class: center, middle, inverse
 
-# Exercise 2
+# Exercise 2 MRE: Maximal Random-Effects Structure
 
-(see handout or file in `exercises` folder)
+(see `exercises\exercise2_MRE.Rmd` in folder or handout)
 
 ---
 class: small, inline-grey
@@ -724,7 +1035,7 @@ m_max2 &lt;- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id) + 
     (B_given_A_c*rel_cond||i_id), 
-  datr, method = 'S', expand_re = TRUE)
+  dat2, method = 'S', expand_re = TRUE)
 ```
 
 ```
@@ -749,6 +1060,7 @@ nice(m_max2) %&gt;% as.data.frame()
 
 
 ```r
+library("emmeans")
 emm_options(lmer.df = "asymptotic") 
 # or "Kenward-Roger" or "Satterthwaite"
 emmeans(m_max2, "rel_cond")
@@ -825,7 +1137,7 @@ Research question: Do the machines differ in their score?
 
 .pull-left[
 
-![](mixed_models_files/figure-html/unnamed-chunk-35-1.svg)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-40-1.svg)&lt;!-- --&gt;
 
 ]
 
@@ -995,7 +1307,7 @@ Assumption of mixed models: Data points from same unit of observation more simil
 .pull-right[
 
 ```r
-m1 &lt;- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 &lt;- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -1017,11 +1329,12 @@ icc(m1)
 
 ```
 ## 
-## Linear mixed model
-##  Family: gaussian (identity)
+## Intraclass Correlation Coefficient for Linear mixed model
+## 
+## Family : gaussian (identity)
 ## Formula: if_A_then_B_c ~ 1 + (1 | p_id)
 ## 
-##   ICC (p_id): 0.037706
+##   ICC (p_id): 0.0377
 ```
 ]
 ---
@@ -1032,7 +1345,7 @@ class: small
 .pull-left[
 
 ```r
-m1 &lt;- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 &lt;- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -1045,11 +1358,12 @@ icc(m1)
 
 ```
 ## 
-## Linear mixed model
-##  Family: gaussian (identity)
+## Intraclass Correlation Coefficient for Linear mixed model
+## 
+## Family : gaussian (identity)
 ## Formula: if_A_then_B_c ~ 1 + (1 | p_id)
 ## 
-##   ICC (p_id): 0.037706
+##   ICC (p_id): 0.0377
 ```
 ]
 
@@ -1057,7 +1371,7 @@ icc(m1)
 
 ```r
 m2 &lt;- lmer(if_A_then_B_c ~ 1 + 
-             (rel_cond:B_given_A_c|p_id), datr)
+             (rel_cond:B_given_A_c|p_id), dat2)
 # summary(m2)
  # Groups   Name                   Variance Std.Dev. Corr       
  # p_id     (Intercept)            0.0398   0.200               
@@ -1069,11 +1383,12 @@ icc(m2)
 
 ```
 ## 
-## Linear mixed model
-##  Family: gaussian (identity)
+## Intraclass Correlation Coefficient for Linear mixed model
+## 
+## Family : gaussian (identity)
 ## Formula: if_A_then_B_c ~ 1 + (rel_cond:B_given_A_c | p_id)
 ## 
-##   ICC (p_id): 0.411454
+##   ICC (p_id): 0.4115
 ```
 
 ```r
@@ -1193,7 +1508,7 @@ plot(m_max,
      resid(.,scaled=TRUE) ~ B_given_A | rel_cond)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-49-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-54-1.png)&lt;!-- --&gt;
 ]
 
 .pull-right[
@@ -1202,7 +1517,7 @@ plot(m_max,
 lattice::qqmath(m_max)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-50-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-55-1.png)&lt;!-- --&gt;
 
 ]
 
@@ -1267,7 +1582,7 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
 (function () {
   var script = document.createElement('script');
   script.type = 'text/javascript';
-  script.src  = 'https://cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
   if (location.protocol !== 'file:' && /^https?:/.test(script.src))
     script.src  = script.src.replace(/^https?:/, '');
   document.getElementsByTagName('head')[0].appendChild(script);

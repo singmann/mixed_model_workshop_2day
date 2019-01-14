@@ -1,0 +1,288 @@
+---
+title: 'Exercise 2: Complete, No, and Partial Pooling (Solution)'
+author: "Henrik Singmann"
+date: "January 2019 (updated: `r Sys.Date()`)"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+# Task Description
+
+One finding reported in the literature is that the weather influences ones subjective well-being. File `weather_wb.csv` contains simulated (i.e., fictitious) data from a study in which a random sample of 60 individuals (column `id`) were asked to report their subjective well being (column `swb`) at the end of each of 45 consecutive days. Note, the start date for each participant can be a different day and participants can come from different locations/climates. Subjective well-being was a composite score constructed from four individual items. Participants had to rate how "happy", "joyful", "sad", and "angry" they felt on a scale from 0 to 10, and the last two items were reverse coded for the composite score. In addition, the data also contains the daily sun hours (column `sunh`) at the location the participant was during each day.
+
+Your task is to analyse this data using no-pooling, at least one complete-pooling approach (ideally two different complete pooling approaches), and partial pooling using a linear mixed models. The research goal is to answer the question if there is a relationship between the daily sun hours and the reported subjective well-being. 
+
+Do the different approaches agree in their conclusions? If not, what you think is the correct approach and why do you think the different approaches might provide a different answer? If you can, please add one figure for each of your analyses approaches to the results.
+
+# Solution
+
+### Load Data and Packages
+
+Read data in and load `viridis` package for somewhat nicer color palette.
+
+```{r, message=FALSE}
+library("tidyverse")
+library("viridis")
+library("cowplot")
+theme_set(theme_bw(base_size = 12) + 
+            theme(legend.position="bottom", 
+                  panel.grid.major.x = element_blank(),
+                  panel.grid.minor.x = element_blank()))
+w <- read_csv("weather_wb.csv")
+```
+
+### Descriptive Statistics
+
+First, number of observations and participants
+
+```{r}
+w %>% 
+  group_by(id) %>% 
+  summarise(n = n()) %>% 
+  do(psych::describe(.$n))
+```
+
+Second, descriptive statistics where data is aggregated within participants:
+
+```{r}
+w %>% 
+  group_by(id) %>% 
+  summarise(mean_sunh = mean(sunh),
+            mean_swb = mean(swb)) %>% 
+  select(-id) %>% 
+  do(psych::describe(.))
+```
+
+This shows quite a considerable range in mean daily sun hours as well as mean subjective well-being.
+
+Plot data by id (this incorrectly treats `id` as a numerical variable,). 
+
+```{r, fig.width=4, fig.height=4, dpi=125}
+## Rmarkdown settings: fig.width=4, fig.height=4, dpi=125
+ggplot(w, aes(x = sunh, y = swb, color = id)) +
+  geom_point(alpha = 0.6, position = position_jitter()) +
+  scale_color_viridis()
+```
+
+This does not show a very clear pattern. Not a very useful graph.
+
+### No Pooling
+
+Calculate no-pooling estimates for each participant and plot distribution of slopes. Add mean to slopes.
+
+```{r, fig.width=2, fig.height=2.5, dpi=150}
+no_all <- w %>% 
+  group_by(id) %>% 
+  do(broom::tidy(lm(swb ~ sunh, .)) ) 
+
+no_slope <- no_all %>% 
+  filter(term == "sunh")
+ggplot(no_slope, aes(estimate)) +
+  geom_histogram(bins = 20) +
+  geom_vline(aes(xintercept = mean(estimate)), col='red', size=2)
+
+```
+
+Calculate whether distribution of individual slopes differ from 0.
+
+```{r}
+summary(lm(estimate ~ 1, no_slope))
+```
+
+Proportion of slopes larger 0?
+
+```{r}
+mean(no_slope$estimate > 0)
+```
+
+Descriptive statistics of slope estimates (requires `psych` package):
+
+```{r}
+psych::describe(no_slope$estimate)
+```
+
+
+Can we plot all individual slopes on top of individual data?
+
+```{r, fig.width=4, fig.height=4, dpi=125}
+no_plot <- no_all %>% 
+  select(id:estimate) %>% 
+  spread(term, estimate)
+
+ggplot(w, aes(x = sunh, y = swb, color = id)) +
+  geom_point(alpha = 0.8, position = position_jitter()) +
+  geom_abline(data = no_plot, aes(slope = sunh, intercept = `(Intercept)`, color = id), alpha = 0.3) +
+  scale_color_viridis()
+```
+
+Not really. Maybe only the slopes?
+
+```{r, fig.width=4, fig.height=4, dpi=125}
+no_plot <- no_all %>% 
+  select(id:estimate) %>% 
+  spread(term, estimate)
+
+ggplot(w, aes(x = sunh, y = swb, color = id)) +
+  geom_abline(data = no_plot, aes(slope = sunh, 
+                                  intercept = `(Intercept)`, 
+                                  color = id), alpha = 0.8) +
+  scale_color_viridis() +
+  xlim(0, 12) + ylim(0, 10) +
+  theme(legend.position = "none")
+
+```
+
+Somewhat better.
+
+### Complete Pooling 1
+
+Calculate complete pooling approach across all data points.
+
+```{r}
+cp1 <- lm(swb ~ sunh, w)
+summary(cp1)
+```
+
+Add regression line to full data
+
+```{r, fig.width=4, fig.height=3.5, dpi=125}
+ggplot(w, aes(x = sunh, y = swb)) +
+  geom_point(alpha = 0.6, position = position_jitter()) +
+  geom_abline(intercept = coef(cp1)[1], slope = coef(cp1)[2])
+```
+
+This looks like a zero relationship.
+
+### Complete Pooling 2
+
+Calculate no-pooling approach after aggregating data for each participant.
+
+```{r}
+w_agg <- w %>% 
+  group_by(id) %>% 
+  summarise(swb = mean(swb),
+            sunh = mean(sunh))
+cp2 <- lm(swb ~ sunh, w_agg)
+summary(cp2)
+```
+
+Again no relationship. How does the slope look?
+
+```{r, fig.width=3, fig.height=3, dpi=125}
+ggplot(w_agg, aes(x = sunh, y = swb)) +
+  geom_point() +
+  geom_abline(intercept = coef(cp2)[1], slope = coef(cp2)[2])
+```
+
+That looks a bit more like there was something, but if anything negative. Which differs considerably from the no pooling approach.
+
+### Partial Pooling
+
+To fit the partial pooling model, we load `lme4`. We then estimate the model with a fixed effect for `sunh` and by-participant random intercept as well as by-participant random slopes for `sunh`.
+
+```{r, message=FALSE}
+library("lme4")
+mm1 <- lmer(swb ~ sunh + (sunh|id), w)
+summary(mm1)
+
+```
+
+In the mixed model, the estimated slope of `sunh` is clearly positive and more similar to the no pooling than the complete pooling estimate. 
+
+Let us plot the final model.
+
+```{r, fig.width=4, fig.height=3.5, dpi=125}
+rnd_coefs <- as_tibble(coef(mm1)$id)
+
+ggplot(data = w, aes(x = sunh, y = swb)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "sunh"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = fixef(mm1)[1], slope = fixef(mm1)[2], size = 1.5)
+
+```
+
+
+### Explaining the Differences
+
+Depending on the pooling approach, the results paint a quite different picture. Using complete pooling, we find essentially no evidence for a relationship between daily sun hours and subjective well-being. In contrast, for both the partial pooling and the no pooling approach we find quite convincing evidence for a positive relationship between those variables. The reason for this difference is that these two approaches answer different research question here. 
+
+The complete pooling approaches are telling us whether this relationship exists across participants and also across places with different climates. Consider for example that one participant lives in a rather cold climate with generally few sun hours whereas another lives in a comparatively warm climate with more sun hours. Assuming that the difference in daily sun hours between participants is larger then the difference across days within participants, the complete pooling approaches would tell us whether a relationship in well-being exists across those participants. Is the person living in the cold climate less happy than the person in the warm climate? 
+
+In contrast, the partial pooling approach and the no pooling approach tests whether this relationship exists within each participant and thus within the same climate. Does your subjective well-being fluctuate with the number of daily sun hours that are typical for where you live? 
+
+The difference between partial pooling and no pooling is whether or not we want hierarchical shrinkage. Should we assume that we do not really have enough data to estimate the individual level relationships reliable on their own and/or is it reasonable to assume that the individual-level correlations come from a normal distribution? If either or both of those is the case, we should probably prefer the partial pooling (i.e., mixed) model to the no pooling approach. 
+
+Both research questions are of course valid. Nevertheless, I feel that in the present case the more interesting one is the one on the individual-level, at least from a psychological perspective. And if this is indeed the research question one is interested in, using the complete pooling approach is clearly false. Otherwise one would commit the so-called [*ecological fallacy*](https://en.wikipedia.org/wiki/Ecological_fallacy). More specifically, the ecological fallacy is committed if individual-level inferences are drawn based on group-level data. Likewise, the pattern found here exhibits [*Simpson's paradox*](https://en.wikipedia.org/wiki/Simpson%27s_paradox): Whereas on the individual-level we clearly see a positive relationship for almost all participants, this relationship is absent on the group-level. Another way to put it is to say that the complete pooling approaches exhibit an *aggregation bias*.
+
+
+# Simulation Code
+
+The following is the code used for simulating the data. As can be seen, the true mean correlation is 0.2.
+
+```{r, eval=FALSE}
+library("tidyverse")
+library("psych")
+
+set.seed(66)
+
+total_N <- 60                 ## Number of participants
+
+N <- 45                       ## number of observations per participant
+R <- 0.2                      ## mean correlation in population
+Rz <- fisherz(R)
+
+indiv_R <- fisherz2r(rnorm(total_N, Rz, 0.07))
+
+mus_sunh <- runif(total_N, 1, 9)
+mus_swb <- rnorm(total_N, 7, 1)
+
+SD <- c(2, 1)              ## population SD
+
+## function only works for bivariate data
+gen_correlated_vars <- function(N, R, MU, SD, empirical = FALSE) {
+  cor_mat <- matrix(c(1,R,R,1), ncol = 2)
+  cov_mat <- cor_mat * tcrossprod(SD)
+  ## 'MASS::mvrnorm' uses function mvrnorm from package MASS:
+  d <- MASS::mvrnorm(n = N, 
+                     mu = MU, 
+                     Sigma = cov_mat, 
+                     empirical = empirical) ## TRUE ensures correlation is true in sample
+  colnames(d) <- c("swb", "sunh")
+  d <- as_tibble(d)
+  d$swb <- round(d$swb/0.25)*0.25
+  d$swb <- ifelse(d$swb > 10, 10, 
+                  ifelse(d$swb < 0, 0, d$swb))
+  d$sunh <- round(d$sunh, 1)
+  return(d)
+}
+
+
+dl <- vector("list", total_N)
+
+for (i in seq_len(total_N)) {
+  dl[[i]] <- gen_correlated_vars(N = N, R = indiv_R[i], 
+                                 MU = c(mus_swb[i], mus_sunh[i]), SD = SD) 
+  dl[[i]]$id <- i
+}
+
+d <- bind_rows(dl)
+d <- d %>%
+  mutate(sunh = ifelse(sunh < 0, 0, sunh))
+
+cor(d$swb, d$sunh)
+
+GGally::ggpairs(d, columns = 1:2, diag = list(continuous = "barDiag"))
+
+ggplot(d, aes(swb)) +
+  geom_bar()
+
+d %>% 
+  select(id, sunh, swb) %>% 
+  write_csv("weather_wb.csv")
+
+```
+

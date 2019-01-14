@@ -8,192 +8,208 @@ options(htmltools.dir.version = FALSE)
 options(width=110)
 options(digits = 4)
 
-## ---- echo=FALSE, results='hide', message=FALSE--------------------------
-load("ssk16_dat_tutorial.rda") 
-str(dat)
-datr <- droplevels(dat[dat$rel_cond != "NE",])
-library("ggplot2")
-afex::set_sum_contrasts()
-library("lme4")
+## ---- message=FALSE------------------------------------------------------
+# Session -> Set Working Directory ->
+# -> To Source File Location
+load("ssk16_dat_prepared_ex2.rda") 
+# full data: https://osf.io/j4swp/
+str(dat2, width=50, strict.width = "cut")
+
+## ---- fig.height=6, dev='svg', message=FALSE-----------------------------
+library("tidyverse")
+theme_set(theme_bw(base_size = 17))
+ggplot(data = dat2) + 
+  geom_point(mapping = aes(x = B_given_A, 
+                           y = if_A_then_B), 
+             alpha = 0.2, pch = 16, size = 3) + 
+  coord_fixed()
 
 ## ------------------------------------------------------------------------
-m_fixed <- lm(if_A_then_B_c ~ B_given_A_c, datr)
+m_fixed <- lm(if_A_then_B_c ~ B_given_A_c, dat2)
 summary(m_fixed)
 
-## ---- echo=FALSE, dpi=500, fig.width=3.5, fig.height=3.5-----------------
-par(pty="s")
-limits <- c(-0.5, 0.5)
-plot(if_A_then_B_c ~ B_given_A_c, datr, asp = 1, ylim=limits, xlim=limits)
-abline(m_fixed)
+## ---- echo=FALSE, dpi=300, fig.width=4, fig.height=4, dev='svg'----------
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed() 
 
-## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=4-------------------
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, asp = 1, ylim=limits, xlim=limits)
-abline(m_fixed)
+## ---- echo=FALSE, fig.width=3.5, fig.height=4, dev='svg'-----------------
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
 
-## ---- echo=FALSE, dpi=500, fig.width=3.5, fig.height=4, warning=FALSE----
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, 
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
+## ---- echo=FALSE, dpi=500, fig.width=3.5, fig.height=4, warning=FALSE, message=FALSE----
+library("lme4")
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
 
-## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=3.5, warning=FALSE, out.width='25%'----
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr,
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
+
+## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=3.5, warning=FALSE, out.width='20%'----
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed() 
 
 ## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=4, warning=FALSE , out.width='25%'----
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-rnd_coefs <- coef(m_tmp)$p_id
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr,
-     asp = 1, ylim=limits, xlim=limits)
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1], 
-         b = rnd_coefs[i,2],
-         col = "lightgrey")
-abline(m_fixed)
-
-## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE, out.width='80%'----
-ggplot(datr, aes(y = if_A_then_B_c, x = B_given_A_c)) +
-  geom_point() +
-  facet_wrap(~ rel_cond) + 
-  theme_light() + coord_fixed()
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "B_given_A_c"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
+  coord_fixed()
 
 ## ------------------------------------------------------------------------
+library("lme4")
+m_r <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
+summary(m_r)
+
+## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE, out.width='80%'----
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
+
+## ------------------------------------------------------------------------
+afex::set_sum_contrasts()
 m_fixed <- lm(if_A_then_B_c ~ 
-                B_given_A_c*rel_cond, datr)
+                B_given_A_c*rel_cond, dat2)
 summary(m_fixed)
 
-## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4---------------------
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
+slopes <- data_frame(
+  intercept = coef(m_fixed)[1] + c(1, -1)*coef(m_fixed)[3],
+  slope = coef(m_fixed)[2] + c(1, -1)*coef(m_fixed)[4],
+  rel_cond = factor(c("PO", "IR"), levels = c("PO", "IR"))
+)
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope),
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4---------------------
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (0+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (0+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=3.5, warning=FALSE----
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (1+B_given_A_c|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (1+B_given_A_c|p_id), dat2)
+rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
 
 ## ------------------------------------------------------------------------
 library("lme4")
 m_p_max <- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
-         (B_given_A_c*rel_cond|p_id), datr)
+         (B_given_A_c*rel_cond|p_id), dat2)
 summary(m_p_max)$varcor
 summary(m_p_max)$coefficients
 
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
-m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), datr)
-rnd_coefs <- coef(m_tmp)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] + rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] + rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,1] - rnd_coefs[i,3], 
-         b = rnd_coefs[i,2] - rnd_coefs[i,4],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+rnd_coefs <- as_tibble(coef(m_p_max)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1`
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - rnd_coefs$rel_cond1,
+    slope = rnd_coefs$B_given_A_c - rnd_coefs$`B_given_A_c:rel_cond1`
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  theme_light() + coord_fixed() +
+  theme(text = element_text(size=20))
 
 ## ------------------------------------------------------------------------
 m_max <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
                 (B_given_A_c*rel_cond|p_id) + 
                 (B_given_A_c*rel_cond|i_id), 
-              datr)
+              dat2)
 
 ## ------------------------------------------------------------------------
 summary(m_max)
 
 ## ---- echo=FALSE, message=FALSE, warning=FALSE, results='hide'-----------
-library("dplyr")
 library("broom")
-library("ggplot2")
-library("tidyr")
-no_pooling_estimates <- datr %>% 
+no_pooling_estimates <- dat2 %>% 
   group_by(p_id, rel_cond) %>% 
   do(tidy(lm(if_A_then_B_c~B_given_A_c, .))) %>% 
   filter(term == "B_given_A_c") %>% 
@@ -253,10 +269,10 @@ estimates_l %>%
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## library("afex")
-## mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "KR")
-## mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "S")
-## mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "LRT")
-## # mixed(if_A_then_B ~ B_given_A*rel_cond + (B_given_A*rel_cond|p_id), datr, method = "PB")
+## mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "KR")
+## mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "S")
+## mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "LRT")
+## # mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "PB")
 
 ## ---- echo=FALSE, results='hide', message=FALSE--------------------------
 library("afex")
@@ -265,7 +281,7 @@ library("afex")
 m_red <- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id), 
-  datr, method = "S", 
+  dat2, method = "S", 
   expand_re = TRUE)
 
 ## ------------------------------------------------------------------------
@@ -275,26 +291,45 @@ summary(m_red)$varcor
 m_red
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
-rnd_coefs <- coef(m_red$full_model)$p_id
-par(mfrow = c(1,2))
-par(pty="s")
-limits <- c(-0.5, 0.5)
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "PO", 
-     asp = 1, ylim=limits, xlim=limits, main ="PO")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,4] + rnd_coefs[i,6] + rnd_coefs[i,2], 
-         b = rnd_coefs[i,5] + rnd_coefs[i,1] + rnd_coefs[i,7] + rnd_coefs[i,3],
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] + coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] + coef(m_fixed)[4])
-plot(if_A_then_B_c ~ B_given_A_c, datr, subset = rel_cond == "IR", 
-     asp = 1, ylim=limits, xlim=limits, main ="IR")
-for (i in seq_len(nrow(rnd_coefs))) 
-  abline(a = rnd_coefs[i,4] - (rnd_coefs[i,6] + rnd_coefs[i,2]), 
-         b = rnd_coefs[i,5] + rnd_coefs[i,1] - (rnd_coefs[i,7] + rnd_coefs[i,3]),
-         col = "lightgrey")
-abline(a = coef(m_fixed)[1] - coef(m_fixed)[3], 
-       b = coef(m_fixed)[2] - coef(m_fixed)[4])
+rnd_coefs <- as_tibble(coef(m_red$full_model)$p_id)
+rnd_coefs2 <- bind_rows(
+  tibble(
+    rel_cond = factor("PO", levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` + 
+      rnd_coefs$rel_cond1 + rnd_coefs$re1.rel_cond1,
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$`B_given_A_c:rel_cond1` + rnd_coefs$re1.B_given_A_c + rnd_coefs$re1.B_given_A_c_by_rel_cond1
+  ),
+  tibble(
+    rel_cond = factor(c("IR"), levels = c("PO", "IR")),
+    intercept = rnd_coefs$`(Intercept)` - 
+      (rnd_coefs$rel_cond1 + rnd_coefs$re1.rel_cond1),
+    slope = rnd_coefs$B_given_A_c + rnd_coefs$re1.B_given_A_c - (rnd_coefs$`B_given_A_c:rel_cond1` + rnd_coefs$re1.B_given_A_c_by_rel_cond1)
+  )
+)
+
+ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs2, aes(intercept = intercept, slope = slope), 
+              size = 1.2, color = "lightgrey") +
+  geom_abline(data = slopes, aes(intercept = intercept, slope = slope), 
+              size = 1.5) +
+  facet_wrap(~ rel_cond) + 
+  coord_fixed()
+
+## ------------------------------------------------------------------------
+library("afex")
+ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
+              method = "S") 
+
+ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
+              method = "S", expand_re = TRUE) 
+
+
+## ------------------------------------------------------------------------
+ma_2 ## or: nice(ma_2)
+
+## ------------------------------------------------------------------------
+summary(ma_2) ## lme4 summary() output
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length +
@@ -307,10 +342,11 @@ m_max2 <- mixed(
   if_A_then_B_c ~ B_given_A_c*rel_cond + 
     (B_given_A_c*rel_cond||p_id) + 
     (B_given_A_c*rel_cond||i_id), 
-  datr, method = 'S', expand_re = TRUE)
+  dat2, method = 'S', expand_re = TRUE)
 nice(m_max2) %>% as.data.frame()
 
 ## ------------------------------------------------------------------------
+library("emmeans")
 emm_options(lmer.df = "asymptotic") 
 # or "Kenward-Roger" or "Satterthwaite"
 emmeans(m_max2, "rel_cond")
@@ -368,7 +404,7 @@ pairs(emmeans(mach2, "Machine"),
 library("sjstats")
 
 ## ------------------------------------------------------------------------
-m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -381,7 +417,7 @@ library("sjstats")
 icc(m1)
 
 ## ------------------------------------------------------------------------
-m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), datr)
+m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
 # Random effects:
 #  Groups   Name        Variance Std.Dev.
@@ -393,7 +429,7 @@ icc(m1)
 
 ## ---- warning=FALSE, message=FALSE---------------------------------------
 m2 <- lmer(if_A_then_B_c ~ 1 + 
-             (rel_cond:B_given_A_c|p_id), datr)
+             (rel_cond:B_given_A_c|p_id), dat2)
 # summary(m2)
  # Groups   Name                   Variance Std.Dev. Corr       
  # p_id     (Intercept)            0.0398   0.200               
