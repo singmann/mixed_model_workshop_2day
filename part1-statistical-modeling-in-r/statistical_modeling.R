@@ -457,5 +457,5 @@ pairs(emmeans(a1, "Machine"),
 
 ## ------------------------------------------------------------------------
 pairs(emmeans(mmach, "Machine"), 
-      adjust = "holm")  ## no pooling results
+      adjust = "holm")  ## complete pooling results
 
