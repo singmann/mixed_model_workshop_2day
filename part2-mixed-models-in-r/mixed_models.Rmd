@@ -38,6 +38,7 @@ Steps for running a mixed model analysis:
 4. Choose method for calculating *p*-values and fit maximal model
 5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
+
 ---
 
 # Mixed Models
@@ -764,11 +765,13 @@ class: small, inline-grey
 
 *Random-effects parameters*: 
 - zero-centered offsets/displacements for each level of random-effects grouping factor
-- added to specific fixed-effects parameter (can also be added in the absence of the corresponding fixed-effects parameter)
-- assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding over-fitting
+- added to specific fixed-effects parameter (can also be added in absence of corresponding fixed-effects parameter)
+- called *random-intercept* if added to the intercept, and *random-slope* if added to any other parameter.
+- assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding overfitting
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
+- Note: random-slopes can only be added if there exist multiple data points (i.e., replications) for each level of random-effects grouping factor and each parameter (e.g., each cell of corresponding factor or design-cell) (e.g., http://singmann.org/mixed-models-for-anova-designs-with-one-observation-per-unit-of-observation-and-cell-of-the-design/)
 - mixed model can have random-effects for multiple random-effects grouping factor (e.g., factors one wants to generalize over)
-- whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies
+- whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies in mixed models
 
 ---
 
@@ -814,27 +817,31 @@ class:small
 
 - Omitting random-effects parameters for model terms which vary within the levels of a random-effects grouping factor and for which random variability exists leads to non-iid residuals (i.e., $\epsilon$) and potentially anti-conservative results (e.g., Barr, Levy, Scheepers, & Tily, 2013).
 - Safeguard is **maximal model justified by the design** (Barr et al., 2013).
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 --
 
-- If maximal model is overparameterized and/or contains degenerate estimates or singular fits (can be indicated by convergence warnings), power of maximal model can be reduced and a reduced model should be used (Bates et al., 2015; Matuschek et al., 2017).
+
+- If maximal model is overparameterized and/or contains degenerate estimates or singular fits (can be indicated by convergence warnings/messages), power of maximal model can be reduced and a reduced model should be used (Bates et al., 2015; Matuschek et al., 2017).
   - Start by removing correlation among random-effects parameters
   - Remove random-effects parameters with variance of 0 and/or for highest-order effects with lowest variance
   - It can sometimes help to try different optimizers (in `afex::mixed` `all_fit = TRUE`)
   - Compare *p*-values/fixed-effects estimates across models (*p*-values from degenerate/minimal models are not reliable)
+  - **Warning:** Reducing model introduces unknown risk of anti-conservativity, and should be done with caution!
 
 
---
+---
 
+### High-Level Overview
 
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
 2. Identify random-effects grouping factors
-3. Identify which factors/terms vary within levels of each random-effects grouping factor: maximal model
+3. Identify *maximal random-effects structure justified by the design*:
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 4. Choose method for calculating *p*-values and fit maximal model
-5. Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed.
-
-
-
+5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
 ---
 class: small
@@ -901,20 +908,31 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
 
 ```{r}
 library("afex")
-ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
-              method = "S") 
+ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id) + 
+                (B_given_A_c*rel_cond|i_id), dat2, method = "S") 
 
-ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
-              method = "S", expand_re = TRUE) 
-
+ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 ```
 
 ---
 
+## Using `afex` II
+
+```{r}
+summary(ma_2)$varcor
+
+ma_3 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c+rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
+```
+
+---
+
+
 ## Using `afex`: ANOVA Table
 
 ```{r}
-ma_2 ## or: nice(ma_2)
+ma_3 ## or: nice(ma_2)
 ```
 
 - Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
@@ -923,8 +941,89 @@ ma_2 ## or: nice(ma_2)
 class: small
 
 ```{r}
-summary(ma_2) ## lme4 summary() output
+summary(ma_3) ## lme4 summary() output
 ```
+
+---
+class: small
+
+```{r}
+summary(ma_3)$varcor
+```
+
+--
+
+```{r}
+summary(ma_3)$coefficients %>% zapsmall
+```
+
+
+---
+class: small
+
+## Skovgaard-Olsen et al. (2016): Follow-up Analyses
+.pull-left[
+
+```{r, message=FALSE}
+nice(ma_3) %>% as.data.frame()
+```
+
+]
+
+.pull-right[
+
+```{r}
+library("emmeans")
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emmeans(ma_3, "rel_cond")
+```
+
+]
+
+---
+class: small
+
+## Using `afex_plot`
+
+.pull-left[
+```{r}
+p1 <- afex_plot(ma_3, "rel_cond")
+
+p2 <- afex_plot(ma_3, "rel_cond", 
+                random = "p_id", 
+                data_geom = ggpol::geom_boxjitter,
+                mapping = "fill")
+```
+
+]
+
+.pull-right[
+```{r, fig.width=5.5, fig.height=4, dev='svg'}
+p2
+```
+
+]
+
+---
+class: small
+
+### Mixed Models in R: Follow-up Analyses
+
+```{r}
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emtrends(ma_3, "rel_cond", var = "B_given_A_c")
+```
+
+```{r}
+fixef(ma_3$full_model)[2] + fixef(ma_3$full_model)[4] 
+```
+
+
+More examples of interplay between `mixed` or `lmer` with `emmeans`:
+- https://cran.r-project.org/package=afex/vignettes/afex_mixed_example.html
+- https://cran.r-project.org/package=emmeans/vignettes/sophisticated.html#lmer
 
 ---
 
@@ -951,53 +1050,6 @@ m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length +
                   (task||item), fhch2010, 
                 method = "S", expand_re = TRUE)
 ```
-
----
-class: small
-
-## Skovgaard-Olsen et al. (2016): Follow-up Analyses
-.pull-left[
-
-```{r, message=FALSE}
-m_max2 <- mixed(
-  if_A_then_B_c ~ B_given_A_c*rel_cond + 
-    (B_given_A_c*rel_cond||p_id) + 
-    (B_given_A_c*rel_cond||i_id), 
-  dat2, method = 'S', expand_re = TRUE)
-nice(m_max2) %>% as.data.frame()
-```
-
-]
-
-.pull-right[
-
-```{r}
-library("emmeans")
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emmeans(m_max2, "rel_cond")
-```
-
-]
----
-class: small
-
-### Mixed Models in R: Follow-up Analyses
-
-```{r}
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emtrends(m_max2, "rel_cond", var = "B_given_A_c")
-```
-
-```{r}
-fixef(m_max2$full_model)[2] + fixef(m_max2$full_model)[4] 
-```
-
-
-More examples of interplay between `mixed` or `lmer` with `emmeans`:
-- https://cran.r-project.org/package=afex/vignettes/afex_mixed_example.html
-- https://cran.r-project.org/package=emmeans/vignettes/sophisticated.html#lmer
 
 
 ---
@@ -1110,11 +1162,62 @@ pairs(emmeans(mach1, "Machine"),
 **Mixed-effects model**
 
 ```{r}
+emm_options(lmer.df = "Satterthwaite")
+## or "Kenward-Roger"
 pairs(emmeans(mach2, "Machine"),
       adjust = "holm")
 ```
 
 ]
+
+---
+class: center, middle, inverse
+
+# Many Labs 2
+# (Last Exercise: `exercise2_ML2.Rmd` or handout)
+
+---
+class: small
+
+ 
+
+> **Many Labs 2 abstract:** We conducted preregistered replications of 28 classic and contemporary published findings with protocols that were peer reviewed in advance to examine variation in effect magnitudes across sample and setting. Each protocol was administered to approximately half of 125 samples and 15,305 total participants from 36 countries and territories. Using conventional statistical significance (p < .05), fifteen (54%) of the replications provided evidence in the same direction and statistically significant as the original finding. With a strict significance criterion (p < .0001), fourteen (50%) provide such evidence reflecting the extremely high powered design. Seven (25%) of the replications had effect sizes larger than the original finding and 21 (75%) had effect sizes smaller than the original finding. 
+
+> The median comparable Cohen's d effect sizes for original findings was 0.60 and for replications was 0.15. Sixteen replications (57%) had small effect sizes (< .20) and 9 (32%) were in the opposite direction from the original finding. 
+
+
+> Across settings, 11 (39%) showed significant heterogeneity using the Q statistic and most of those were among the findings eliciting the largest overall effect sizes; only one effect that was near zero in the aggregate showed significant heterogeneity. Only one effect showed a Tau > 0.20 indicating moderate heterogeneity. Nine others had a Tau near or slightly above 0.10 indicating slight heterogeneity. Moderation tests indicated that very little heterogeneity was attributable to the order in which the tasks were performed or whether the tasks were administered in lab versus online. 
+
+> Exploratory comparisons revealed little heterogeneity between Western, educated, industrialized, rich, and democratic (WEIRD) cultures and less WEIRD cultures (i.e., cultures with relatively high and low WEIRDness scores, respectively). Cumulatively, variability in the observed effect sizes was attributable more to the effect being studied than to the sample or setting in which it was studied.
+
+For paper and materials see: https://osf.io/8cd4r/
+
+---
+class: small
+
+- Goal: Reanalyze data from 3 samples and 1 task, syllogisms, used in Many Labs 2.
+- Between-subjects manipulation supposedly affected fluency of syllogisms: Hard to read vs. easy to read font.
+- Hypothesis: Decreased fluency makes individuals think harder and thus they solve more syllogisms.
+
+Syllogisms are logical arguments with two premises. For example:
+
+> All dentists are golfers.  
+> Some dentists are not tennis players.  
+> What, if anything, follows
+
+Participants have to select the correct answer (what follows with logical necessity assuming the premises listed above are true) among a set of 9 possible conclusions listed below:
+
+1. All golfers are tennis players.
+2. No tennis players are golfers.
+3. All tennis players are golfers.
+4. No golfers are tennis players.
+5. Some golfers are not tennis players.
+6. Some golfers are tennis players.
+7. Some tennis players are not golfers.
+8. Some tennis players are golfers.
+1. Cannot reach a conclusion.
+
+- Main tasks: Identify maximal random-effects structure, fit data with mixed model, evaluate whether hypothesized pattern was observed. For more see exercise sheet.
 
 ---
 class: center, middle, inverse
@@ -1135,7 +1238,7 @@ library("sjstats")
 
 Assumption of mixed models: Data points from same unit of observation more similar to each other than unrelated data point.
 
-**Intraclass correlation coefficient (ICC)**: Measure of similarity for data points of a given unit of observations ranging from 0 to 1:
+**Intraclass correlation coefficient (ICC)**: Measure of similarity for data points of a given random-effects grouping factor ranging from 0 to 1:
 $$\rho=\frac{\sigma^2_S}{\sigma^2_S+\sigma^2_\epsilon}$$
 
 > The intraclass correlation $\rho$ can also be interpreted as the expected correlation between two randomly drawn units that are in the same group. (Hox, 2010, p. 15)
@@ -1193,6 +1296,48 @@ icc(m2)
 
 - ICC can be useful to determine if mixed models necessary or to determine how multilevel-clustering effects response.
 - ICC often not very useful for random-slope models (Goldstein et al., 2002), direct inspection of SDs often more helpful. 
+
+---
+class: inline-grey, small
+.pull-left[
+## LMMs: Residuals
+
+```{r, fig.width=5, fig.height=5}
+
+dat2$residuals <- 
+  residuals(ma_3$full_model)
+ggplot(dat2, aes(sample = residuals)) +
+  stat_qq() + 
+  stat_qq_line() +
+  theme_bw() +
+  theme(text=element_text(size=18))
+```
+]
+
+
+.pull-right[
+- We can inspect normality assumption of LMM using QQ-plots via `residuals()`
+- For `afex::mixed` make sure to pass `full_model` slot to `residuals()`.
+- Alternatively, use `qqmath.merMod()` (see `?qqmath.merMod`).
+- Here, very heavy tails in residuals  (i.e., leptokurtic) and no transformation can help. Without more ambitious model we have to settle.
+    - We know normality assumption must be violated for data on restricted scale 
+    - We are not interested in coefficients and prediction 
+    - Inference agrees with visual impression
+
+
+```{r, fig.width=5, fig.height=2.5, echo=FALSE}
+dat2 %>% 
+  select(if_A_then_B, B_given_A) %>% 
+  gather(key, value, if_A_then_B, B_given_A) %>% 
+  mutate(key = factor(key, levels = c("if_A_then_B", "B_given_A"))) %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 101) +
+  facet_wrap(~key) +
+  theme_bw() +
+  theme(text=element_text(size=18))
+```
+
+]
 
 ---
 class: inline-grey

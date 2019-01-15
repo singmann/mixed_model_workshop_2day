@@ -35,6 +35,7 @@ Steps for running a mixed model analysis:
 4. Choose method for calculating *p*-values and fit maximal model
 5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
+
 ---
 
 # Mixed Models
@@ -751,11 +752,13 @@ class: small, inline-grey
 
 *Random-effects parameters*: 
 - zero-centered offsets/displacements for each level of random-effects grouping factor
-- added to specific fixed-effects parameter (can also be added in the absence of the corresponding fixed-effects parameter)
-- assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding over-fitting
+- added to specific fixed-effects parameter (can also be added in absence of corresponding fixed-effects parameter)
+- called *random-intercept* if added to the intercept, and *random-slope* if added to any other parameter.
+- assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding overfitting
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
+- Note: random-slopes can only be added if there exist multiple data points (i.e., replications) for each level of random-effects grouping factor and each parameter (e.g., each cell of corresponding factor or design-cell) (e.g., http://singmann.org/mixed-models-for-anova-designs-with-one-observation-per-unit-of-observation-and-cell-of-the-design/)
 - mixed model can have random-effects for multiple random-effects grouping factor (e.g., factors one wants to generalize over)
-- whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies
+- whether data has only a single random-effects grouping factor, crossed random-effects grouping factors, or nested random-effects grouping factors, random-effects parameters is only mechanism for handling dependencies in mixed models
 
 ---
 
@@ -802,27 +805,31 @@ class:small
 
 - Omitting random-effects parameters for model terms which vary within the levels of a random-effects grouping factor and for which random variability exists leads to non-iid residuals (i.e., `\(\epsilon\)`) and potentially anti-conservative results (e.g., Barr, Levy, Scheepers, &amp; Tily, 2013).
 - Safeguard is **maximal model justified by the design** (Barr et al., 2013).
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 --
 
-- If maximal model is overparameterized and/or contains degenerate estimates or singular fits (can be indicated by convergence warnings), power of maximal model can be reduced and a reduced model should be used (Bates et al., 2015; Matuschek et al., 2017).
+
+- If maximal model is overparameterized and/or contains degenerate estimates or singular fits (can be indicated by convergence warnings/messages), power of maximal model can be reduced and a reduced model should be used (Bates et al., 2015; Matuschek et al., 2017).
   - Start by removing correlation among random-effects parameters
   - Remove random-effects parameters with variance of 0 and/or for highest-order effects with lowest variance
   - It can sometimes help to try different optimizers (in `afex::mixed` `all_fit = TRUE`)
   - Compare *p*-values/fixed-effects estimates across models (*p*-values from degenerate/minimal models are not reliable)
+  - **Warning:** Reducing model introduces unknown risk of anti-conservativity, and should be done with caution!
 
 
---
+---
 
+### High-Level Overview
 
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
 2. Identify random-effects grouping factors
-3. Identify which factors/terms vary within levels of each random-effects grouping factor: maximal model
+3. Identify *maximal random-effects structure justified by the design*:
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
 4. Choose method for calculating *p*-values and fit maximal model
-5. Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed.
-
-
-
+5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
 
 ---
 class: small
@@ -889,8 +896,8 @@ m_red
 
 ```r
 library("afex")
-ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
-              method = "S") 
+ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id) + 
+                (B_given_A_c*rel_cond|i_id), dat2, method = "S") 
 ```
 
 ```
@@ -912,8 +919,53 @@ ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_
 ```
 
 ```r
-ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
-              method = "S", expand_re = TRUE) 
+ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
+```
+
+```
+## Numerical variables NOT centered on 0: B_given_A_c
+## If in interactions, interpretation of lower order (e.g., main) effects difficult.
+```
+
+```
+## Fitting one lmer() model.
+```
+
+```
+## singular fit
+```
+
+```
+## [DONE]
+## Calculating p-values. [DONE]
+```
+
+---
+
+## Using `afex` II
+
+
+```r
+summary(ma_2)$varcor
+```
+
+```
+##  Groups   Name                         Std.Dev.
+##  p_id     (Intercept)                  0.1130  
+##  p_id.1   re1.B_given_A_c              0.1782  
+##  p_id.2   re1.rel_cond1                0.0843  
+##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.1996  
+##  i_id     (Intercept)                  0.0181  
+##  i_id.1   re2.B_given_A_c              0.0737  
+##  i_id.2   re2.rel_cond1                0.0287  
+##  i_id.3   re2.B_given_A_c_by_rel_cond1 0.0000  
+##  Residual                              0.1664
+```
+
+```r
+ma_3 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c+rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 ```
 
 ```
@@ -928,23 +980,24 @@ ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p
 
 ---
 
+
 ## Using `afex`: ANOVA Table
 
 
 ```r
-ma_2 ## or: nice(ma_2)
+ma_3 ## or: nice(ma_2)
 ```
 
 ```
 ## Mixed Model Anova Table (Type 3 tests, S-method)
 ## 
 ## Model: if_A_then_B_c ~ B_given_A_c * rel_cond + (B_given_A_c * rel_cond || 
-## Model:     p_id)
+## Model:     p_id) + (B_given_A_c + rel_cond || i_id)
 ## Data: dat2
 ##                 Effect       df          F p.value
-## 1          B_given_A_c 1, 89.04 484.41 ***  &lt;.0001
-## 2             rel_cond 1, 89.44 174.44 ***  &lt;.0001
-## 3 B_given_A_c:rel_cond 1, 85.45  42.24 ***  &lt;.0001
+## 1          B_given_A_c 1, 18.73 297.43 ***  &lt;.0001
+## 2             rel_cond 1, 23.47 115.19 ***  &lt;.0001
+## 3 B_given_A_c:rel_cond 1, 86.54  38.35 ***  &lt;.0001
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
@@ -956,45 +1009,208 @@ class: small
 
 
 ```r
-summary(ma_2) ## lme4 summary() output
+summary(ma_3) ## lme4 summary() output
 ```
 
 ```
 ## Linear mixed model fit by REML. t-tests use Satterthwaite's method ['lmerModLmerTest']
 ## Formula: if_A_then_B_c ~ B_given_A_c * rel_cond + (1 + re1.B_given_A_c +  
-##     re1.rel_cond1 + re1.B_given_A_c_by_rel_cond1 || p_id)
+##     re1.rel_cond1 + re1.B_given_A_c_by_rel_cond1 || p_id) + (1 +  
+##     re2.B_given_A_c + re2.rel_cond1 || i_id)
 ##    Data: data
 ## 
-## REML criterion at convergence: -129.4
+## REML criterion at convergence: -137
 ## 
 ## Scaled residuals: 
 ##    Min     1Q Median     3Q    Max 
-## -3.725 -0.377 -0.010  0.279  3.461 
+## -3.616 -0.352 -0.015  0.304  3.106 
 ## 
 ## Random effects:
 ##  Groups   Name                         Variance Std.Dev.
-##  p_id     (Intercept)                  0.01215  0.1102  
-##  p_id.1   re1.B_given_A_c              0.03086  0.1757  
-##  p_id.2   re1.rel_cond1                0.00708  0.0842  
-##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.03758  0.1939  
-##  Residual                              0.02968  0.1723  
-## Number of obs: 752, groups:  p_id, 94
+##  p_id     (Intercept)                  0.012771 0.1130  
+##  p_id.1   re1.B_given_A_c              0.031738 0.1782  
+##  p_id.2   re1.rel_cond1                0.007110 0.0843  
+##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.039836 0.1996  
+##  i_id     (Intercept)                  0.000329 0.0181  
+##  i_id.1   re2.B_given_A_c              0.005432 0.0737  
+##  i_id.2   re2.rel_cond1                0.000824 0.0287  
+##  Residual                              0.027674 0.1664  
+## Number of obs: 752, groups:  p_id, 94; i_id, 12
 ## 
 ## Fixed effects:
 ##                       Estimate Std. Error      df t value Pr(&gt;|t|)    
-## (Intercept)            -0.0735     0.0135 92.5542   -5.47  3.9e-07 ***
-## B_given_A_c             0.6091     0.0277 89.0360   22.01  &lt; 2e-16 ***
-## rel_cond1               0.1488     0.0113 89.4409   13.21  &lt; 2e-16 ***
-## B_given_A_c:rel_cond1   0.1884     0.0290 85.4485    6.50  5.1e-09 ***
+## (Intercept)            -0.0728     0.0146 46.3163   -4.98  9.3e-06 ***
+## B_given_A_c             0.6054     0.0351 18.7331   17.25  6.0e-13 ***
+## rel_cond1               0.1498     0.0140 23.4699   10.73  1.6e-10 ***
+## B_given_A_c:rel_cond1   0.1820     0.0294 86.5397    6.19  1.9e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) B_g_A_ rl_cn1
-## B_given_A_c -0.087              
-## rel_cond1    0.036 -0.140       
-## B_gvn_A_:_1 -0.113  0.012 -0.100
+## B_given_A_c -0.063              
+## rel_cond1    0.026 -0.090       
+## B_gvn_A_:_1 -0.105  0.002 -0.078
 ```
+
+---
+class: small
+
+
+```r
+summary(ma_3)$varcor
+```
+
+```
+##  Groups   Name                         Std.Dev.
+##  p_id     (Intercept)                  0.1130  
+##  p_id.1   re1.B_given_A_c              0.1782  
+##  p_id.2   re1.rel_cond1                0.0843  
+##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.1996  
+##  i_id     (Intercept)                  0.0181  
+##  i_id.1   re2.B_given_A_c              0.0737  
+##  i_id.2   re2.rel_cond1                0.0287  
+##  Residual                              0.1664
+```
+
+--
+
+
+```r
+summary(ma_3)$coefficients %&gt;% zapsmall
+```
+
+```
+##                       Estimate Std. Error    df t value Pr(&gt;|t|)
+## (Intercept)              -0.07       0.01 46.32   -4.98        0
+## B_given_A_c               0.61       0.04 18.73   17.25        0
+## rel_cond1                 0.15       0.01 23.47   10.73        0
+## B_given_A_c:rel_cond1     0.18       0.03 86.54    6.19        0
+```
+
+
+---
+class: small
+
+## Skovgaard-Olsen et al. (2016): Follow-up Analyses
+.pull-left[
+
+
+```r
+nice(ma_3) %&gt;% as.data.frame()
+```
+
+```
+##                 Effect       df          F p.value
+## 1          B_given_A_c 1, 18.73 297.43 ***  &lt;.0001
+## 2             rel_cond 1, 23.47 115.19 ***  &lt;.0001
+## 3 B_given_A_c:rel_cond 1, 86.54  38.35 ***  &lt;.0001
+```
+
+]
+
+.pull-right[
+
+
+```r
+library("emmeans")
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emmeans(ma_3, "rel_cond")
+```
+
+```
+## NOTE: Results may be misleading due to involvement in interactions
+```
+
+```
+##  rel_cond  emmean      SE  df asymp.LCL asymp.UCL
+##  PO        0.1261 0.02021 Inf   0.08649    0.1657
+##  IR       -0.1962 0.02023 Inf  -0.23586   -0.1565
+## 
+## Degrees-of-freedom method: asymptotic 
+## Confidence level used: 0.95
+```
+
+]
+
+---
+class: small
+
+## Using `afex_plot`
+
+.pull-left[
+
+```r
+p1 &lt;- afex_plot(ma_3, "rel_cond")
+```
+
+```
+## Aggregating data over: p_id, i_id
+```
+
+```
+## NOTE: Results may be misleading due to involvement in interactions
+```
+
+```r
+p2 &lt;- afex_plot(ma_3, "rel_cond", 
+                random = "p_id", 
+                data_geom = ggpol::geom_boxjitter,
+                mapping = "fill")
+```
+
+```
+## NOTE: Results may be misleading due to involvement in interactions
+```
+
+]
+
+.pull-right[
+
+```r
+p2
+```
+
+![](mixed_models_files/figure-html/unnamed-chunk-39-1.svg)&lt;!-- --&gt;
+
+]
+
+---
+class: small
+
+### Mixed Models in R: Follow-up Analyses
+
+
+```r
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emtrends(ma_3, "rel_cond", var = "B_given_A_c")
+```
+
+```
+##  rel_cond B_given_A_c.trend      SE  df asymp.LCL asymp.UCL
+##  PO                  0.7875 0.04583 Inf    0.6976    0.8773
+##  IR                  0.4234 0.04574 Inf    0.3337    0.5130
+## 
+## Degrees-of-freedom method: asymptotic 
+## Confidence level used: 0.95
+```
+
+
+```r
+fixef(ma_3$full_model)[2] + fixef(ma_3$full_model)[4] 
+```
+
+```
+## B_given_A_c 
+##      0.7875
+```
+
+
+More examples of interplay between `mixed` or `lmer` with `emmeans`:
+- https://cran.r-project.org/package=afex/vignettes/afex_mixed_example.html
+- https://cran.r-project.org/package=emmeans/vignettes/sophisticated.html#lmer
 
 ---
 
@@ -1023,99 +1239,6 @@ m_fhch &lt;- mixed(log_rt ~ task*stimulus*density*frequency*length +
                 method = "S", expand_re = TRUE)
 ```
 
----
-class: small
-
-## Skovgaard-Olsen et al. (2016): Follow-up Analyses
-.pull-left[
-
-
-```r
-m_max2 &lt;- mixed(
-  if_A_then_B_c ~ B_given_A_c*rel_cond + 
-    (B_given_A_c*rel_cond||p_id) + 
-    (B_given_A_c*rel_cond||i_id), 
-  dat2, method = 'S', expand_re = TRUE)
-```
-
-```
-## Fitting one lmer() model. [DONE]
-## Calculating p-values. [DONE]
-```
-
-```r
-nice(m_max2) %&gt;% as.data.frame()
-```
-
-```
-##                 Effect       df          F p.value
-## 1          B_given_A_c 1, 18.73 297.43 ***  &lt;.0001
-## 2             rel_cond 1, 23.47 115.19 ***  &lt;.0001
-## 3 B_given_A_c:rel_cond 1, 86.54  38.35 ***  &lt;.0001
-```
-
-]
-
-.pull-right[
-
-
-```r
-library("emmeans")
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emmeans(m_max2, "rel_cond")
-```
-
-```
-## NOTE: Results may be misleading due to involvement in interactions
-```
-
-```
-##  rel_cond  emmean      SE  df asymp.LCL asymp.UCL
-##  PO        0.1261 0.02021 Inf   0.08649    0.1657
-##  IR       -0.1962 0.02023 Inf  -0.23586   -0.1565
-## 
-## Degrees-of-freedom method: asymptotic 
-## Confidence level used: 0.95
-```
-
-]
----
-class: small
-
-### Mixed Models in R: Follow-up Analyses
-
-
-```r
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emtrends(m_max2, "rel_cond", var = "B_given_A_c")
-```
-
-```
-##  rel_cond B_given_A_c.trend      SE  df asymp.LCL asymp.UCL
-##  PO                  0.7875 0.04583 Inf    0.6976    0.8773
-##  IR                  0.4234 0.04574 Inf    0.3337    0.5130
-## 
-## Degrees-of-freedom method: asymptotic 
-## Confidence level used: 0.95
-```
-
-
-```r
-fixef(m_max2$full_model)[2] + fixef(m_max2$full_model)[4] 
-```
-
-```
-## B_given_A_c 
-##      0.7875
-```
-
-
-More examples of interplay between `mixed` or `lmer` with `emmeans`:
-- https://cran.r-project.org/package=afex/vignettes/afex_mixed_example.html
-- https://cran.r-project.org/package=emmeans/vignettes/sophisticated.html#lmer
-
 
 ---
 class: small
@@ -1137,7 +1260,7 @@ Research question: Do the machines differ in their score?
 
 .pull-left[
 
-![](mixed_models_files/figure-html/unnamed-chunk-40-1.svg)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-45-1.svg)&lt;!-- --&gt;
 
 ]
 
@@ -1266,20 +1389,71 @@ pairs(emmeans(mach1, "Machine"),
 
 
 ```r
+emm_options(lmer.df = "Satterthwaite")
+## or "Kenward-Roger"
 pairs(emmeans(mach2, "Machine"),
       adjust = "holm")
 ```
 
 ```
-##  contrast estimate    SE  df z.ratio p.value
-##  A - B      -7.967 2.421 Inf  -3.291  0.0020
-##  A - C     -13.917 1.540 Inf  -9.036  &lt;.0001
-##  B - C      -5.950 2.446 Inf  -2.432  0.0150
+##  contrast estimate    SE df t.ratio p.value
+##  A - B      -7.967 2.421  5  -3.291  0.0434
+##  A - C     -13.917 1.540  5  -9.036  0.0008
+##  B - C      -5.950 2.446  5  -2.432  0.0592
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
 
 ]
+
+---
+class: center, middle, inverse
+
+# Many Labs 2
+# (Last Exercise: `exercise2_ML2.Rmd` or handout)
+
+---
+class: small
+
+ 
+
+&gt; **Many Labs 2 abstract:** We conducted preregistered replications of 28 classic and contemporary published findings with protocols that were peer reviewed in advance to examine variation in effect magnitudes across sample and setting. Each protocol was administered to approximately half of 125 samples and 15,305 total participants from 36 countries and territories. Using conventional statistical significance (p &lt; .05), fifteen (54%) of the replications provided evidence in the same direction and statistically significant as the original finding. With a strict significance criterion (p &lt; .0001), fourteen (50%) provide such evidence reflecting the extremely high powered design. Seven (25%) of the replications had effect sizes larger than the original finding and 21 (75%) had effect sizes smaller than the original finding. 
+
+&gt; The median comparable Cohen's d effect sizes for original findings was 0.60 and for replications was 0.15. Sixteen replications (57%) had small effect sizes (&lt; .20) and 9 (32%) were in the opposite direction from the original finding. 
+
+
+&gt; Across settings, 11 (39%) showed significant heterogeneity using the Q statistic and most of those were among the findings eliciting the largest overall effect sizes; only one effect that was near zero in the aggregate showed significant heterogeneity. Only one effect showed a Tau &gt; 0.20 indicating moderate heterogeneity. Nine others had a Tau near or slightly above 0.10 indicating slight heterogeneity. Moderation tests indicated that very little heterogeneity was attributable to the order in which the tasks were performed or whether the tasks were administered in lab versus online. 
+
+&gt; Exploratory comparisons revealed little heterogeneity between Western, educated, industrialized, rich, and democratic (WEIRD) cultures and less WEIRD cultures (i.e., cultures with relatively high and low WEIRDness scores, respectively). Cumulatively, variability in the observed effect sizes was attributable more to the effect being studied than to the sample or setting in which it was studied.
+
+For paper and materials see: https://osf.io/8cd4r/
+
+---
+class: small
+
+- Goal: Reanalyze data from 3 samples and 1 task, syllogisms, used in Many Labs 2.
+- Between-subjects manipulation supposedly affected fluency of syllogisms: Hard to read vs. easy to read font.
+- Hypothesis: Decreased fluency makes individuals think harder and thus they solve more syllogisms.
+
+Syllogisms are logical arguments with two premises. For example:
+
+&gt; All dentists are golfers.  
+&gt; Some dentists are not tennis players.  
+&gt; What, if anything, follows
+
+Participants have to select the correct answer (what follows with logical necessity assuming the premises listed above are true) among a set of 9 possible conclusions listed below:
+
+1. All golfers are tennis players.
+2. No tennis players are golfers.
+3. All tennis players are golfers.
+4. No golfers are tennis players.
+5. Some golfers are not tennis players.
+6. Some golfers are tennis players.
+7. Some tennis players are not golfers.
+8. Some tennis players are golfers.
+1. Cannot reach a conclusion.
+
+- Main tasks: Identify maximal random-effects structure, fit data with mixed model, evaluate whether hypothesized pattern was observed. For more see exercise sheet.
 
 ---
 class: center, middle, inverse
@@ -1298,7 +1472,7 @@ class: small
 
 Assumption of mixed models: Data points from same unit of observation more similar to each other than unrelated data point.
 
-**Intraclass correlation coefficient (ICC)**: Measure of similarity for data points of a given unit of observations ranging from 0 to 1:
+**Intraclass correlation coefficient (ICC)**: Measure of similarity for data points of a given random-effects grouping factor ranging from 0 to 1:
 `$$\rho=\frac{\sigma^2_S}{\sigma^2_S+\sigma^2_\epsilon}$$`
 
 &gt; The intraclass correlation `\(\rho\)` can also be interpreted as the expected correlation between two randomly drawn units that are in the same group. (Hox, 2010, p. 15)
@@ -1399,6 +1573,40 @@ icc(m2)
 
 - ICC can be useful to determine if mixed models necessary or to determine how multilevel-clustering effects response.
 - ICC often not very useful for random-slope models (Goldstein et al., 2002), direct inspection of SDs often more helpful. 
+
+---
+class: inline-grey, small
+.pull-left[
+## LMMs: Residuals
+
+
+```r
+dat2$residuals &lt;- 
+  residuals(ma_3$full_model)
+ggplot(dat2, aes(sample = residuals)) +
+  stat_qq() + 
+  stat_qq_line() +
+  theme_bw() +
+  theme(text=element_text(size=18))
+```
+
+![](mixed_models_files/figure-html/unnamed-chunk-58-1.png)&lt;!-- --&gt;
+]
+
+
+.pull-right[
+- We can inspect normality assumption of LMM using QQ-plots via `residuals()`
+- For `afex::mixed` make sure to pass `full_model` slot to `residuals()`.
+- Alternatively, use `qqmath.merMod()` (see `?qqmath.merMod`).
+- Here, very heavy tails in residuals  (i.e., leptokurtic) and no transformation can help. Without more ambitious model we have to settle.
+    - We know normality assumption must be violated for data on restricted scale 
+    - We are not interested in coefficients and prediction 
+    - Inference agrees with visual impression
+
+
+![](mixed_models_files/figure-html/unnamed-chunk-59-1.png)&lt;!-- --&gt;
+
+]
 
 ---
 class: inline-grey
@@ -1508,7 +1716,7 @@ plot(m_max,
      resid(.,scaled=TRUE) ~ B_given_A | rel_cond)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-54-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-61-1.png)&lt;!-- --&gt;
 ]
 
 .pull-right[
@@ -1517,7 +1725,7 @@ plot(m_max,
 lattice::qqmath(m_max)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-55-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-62-1.png)&lt;!-- --&gt;
 
 ]
 

@@ -318,46 +318,63 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
 
 ## ------------------------------------------------------------------------
 library("afex")
-ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, 
-              method = "S") 
+ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id) + 
+                (B_given_A_c*rel_cond|i_id), dat2, method = "S") 
 
-ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id), dat2, 
-              method = "S", expand_re = TRUE) 
-
-
-## ------------------------------------------------------------------------
-ma_2 ## or: nice(ma_2)
+ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 
 ## ------------------------------------------------------------------------
-summary(ma_2) ## lme4 summary() output
+summary(ma_2)$varcor
+
+ma_3 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
+                (B_given_A_c+rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
+
+## ------------------------------------------------------------------------
+ma_3 ## or: nice(ma_2)
+
+## ------------------------------------------------------------------------
+summary(ma_3) ## lme4 summary() output
+
+## ------------------------------------------------------------------------
+summary(ma_3)$varcor
+
+## ------------------------------------------------------------------------
+summary(ma_3)$coefficients %>% zapsmall
+
+## ---- message=FALSE------------------------------------------------------
+nice(ma_3) %>% as.data.frame()
+
+## ------------------------------------------------------------------------
+library("emmeans")
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emmeans(ma_3, "rel_cond")
+
+## ------------------------------------------------------------------------
+p1 <- afex_plot(ma_3, "rel_cond")
+
+p2 <- afex_plot(ma_3, "rel_cond", 
+                random = "p_id", 
+                data_geom = ggpol::geom_boxjitter,
+                mapping = "fill")
+
+## ---- fig.width=5.5, fig.height=4, dev='svg'-----------------------------
+p2
+
+## ------------------------------------------------------------------------
+emm_options(lmer.df = "asymptotic") 
+# or "Kenward-Roger" or "Satterthwaite"
+emtrends(ma_3, "rel_cond", var = "B_given_A_c")
+
+## ------------------------------------------------------------------------
+fixef(ma_3$full_model)[2] + fixef(ma_3$full_model)[4] 
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length +
 ##                   (stimulus*density*frequency*length||id) +
 ##                   (task||item), fhch2010,
 ##                 method = "S", expand_re = TRUE)
-
-## ---- message=FALSE------------------------------------------------------
-m_max2 <- mixed(
-  if_A_then_B_c ~ B_given_A_c*rel_cond + 
-    (B_given_A_c*rel_cond||p_id) + 
-    (B_given_A_c*rel_cond||i_id), 
-  dat2, method = 'S', expand_re = TRUE)
-nice(m_max2) %>% as.data.frame()
-
-## ------------------------------------------------------------------------
-library("emmeans")
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emmeans(m_max2, "rel_cond")
-
-## ------------------------------------------------------------------------
-emm_options(lmer.df = "asymptotic") 
-# or "Kenward-Roger" or "Satterthwaite"
-emtrends(m_max2, "rel_cond", var = "B_given_A_c")
-
-## ------------------------------------------------------------------------
-fixef(m_max2$full_model)[2] + fixef(m_max2$full_model)[4] 
 
 ## ------------------------------------------------------------------------
 data("Machines", package = "MEMSS")
@@ -397,6 +414,8 @@ pairs(emmeans(mach1, "Machine"),
       adjust = "holm")
 
 ## ------------------------------------------------------------------------
+emm_options(lmer.df = "Satterthwaite")
+## or "Kenward-Roger"
 pairs(emmeans(mach2, "Machine"),
       adjust = "holm")
 
@@ -439,6 +458,27 @@ m2 <- lmer(if_A_then_B_c ~ 1 +
 icc(m2)
 ## Caution! ICC for random-slope-intercept models usually 
 ## not meaningful. See 'Note' in `?icc`.
+
+## ---- fig.width=5, fig.height=5------------------------------------------
+
+dat2$residuals <- 
+  residuals(ma_3$full_model)
+ggplot(dat2, aes(sample = residuals)) +
+  stat_qq() + 
+  stat_qq_line() +
+  theme_bw() +
+  theme(text=element_text(size=18))
+
+## ---- fig.width=5, fig.height=2.5, echo=FALSE----------------------------
+dat2 %>% 
+  select(if_A_then_B, B_given_A) %>% 
+  gather(key, value, if_A_then_B, B_given_A) %>% 
+  mutate(key = factor(key, levels = c("if_A_then_B", "B_given_A"))) %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 101) +
+  facet_wrap(~key) +
+  theme_bw() +
+  theme(text=element_text(size=18))
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## data("fhch2010")
