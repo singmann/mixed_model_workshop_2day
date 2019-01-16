@@ -1038,16 +1038,16 @@ class: small, inline-grey
 
 # Freeman, Heathcote, Chalmers, and Hockley (2010): Maximal Model
 
-- `task`: between-participants, but within-items (i.e., nested within item)
-- `stimulus`: within-participants (i.e., nested within participants), but between items (i.e., each item is either word or non-word)
-- `density`: within-participants, but between items
-- `frequency`: within-participants, but between items
-- `length`: within-participants, but between items
+- `task`: between participants (i.e., participants are nested within `task`), but within items (i.e., `task` is crossed with item)
+- `stimulus`: within participants (i.e., crossed with participants), but between items (i.e., each item is either word or non-word and thus `item` is nested within `stimulus`)
+- `density`: within participants, but between items
+- `frequency`: within participants, but between items
+- `length`: within participants, but between items
 
 ```{r, eval=FALSE}
 m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length + 
-                  (stimulus*density*frequency*length||id) +
-                  (task||item), fhch2010, 
+                  (stimulus*density*frequency*length|id) +
+                  (task|item), fhch2010, 
                 method = "S", expand_re = TRUE)
 ```
 
