@@ -1049,6 +1049,8 @@ m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length +
                   (stimulus*density*frequency*length|id) +
                   (task|item), fhch2010, 
                 method = "S", expand_re = TRUE)
+
+## note: id RE-term has 24 parameters! Estimation of 276 correlations unrealistic! 
 ```
 
 
