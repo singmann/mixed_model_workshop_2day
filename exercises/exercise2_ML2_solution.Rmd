@@ -135,10 +135,18 @@ m_r4
 ```{r}
 emmeans(m_r5, "fluency", by = "source")
 
-pairs(emmeans(m_r5, "fluency", by = "source"))
+emmeans(m_r5, "fluency", by = "source") %>% 
+  pairs()
+
+## note, previous solution does not adequately control for multiple testing:
+emmeans(m_r5, "fluency", by = "source") %>% 
+  pairs() %>% 
+  update(by = NULL) %>% 
+  summary(adjust = "holm", infer = TRUE) # infer = TRUE gives CIs
 
 ## results very similar for full model
-pairs(emmeans(m_max, "fluency", by = "source"))
+emmeans(m_max, "fluency", by = "source") %>% 
+  pairs()
 
 ```
 
