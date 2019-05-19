@@ -5,7 +5,7 @@ Please bring your laptop and prepare it beforehand. This includes:
 
 In the interest of spending the time of the tutorial on its content, it is important that you do this at least one or two days before the tutorial. I will not have the time to solve installation problems at the day of the tutorial. So please make sure you do this beforehand!
 
-The latest version of R is 3.5.2 and can be downloaded from: https://cran.rstudio.com/
+The latest version of R is 3.6.0 and can be downloaded from: https://cloud.r-project.org/
 The latest version of RStudio is 1.1.463 and can be downloaded from: https://www.rstudio.com/products/rstudio/download/#download
 
 Please note that both R and RStudio need to be updated independently and older versions of R/RStudio are likely to not work properly.
@@ -19,6 +19,9 @@ broom
 xaringan
 sjPlot
 GGally
+ggbeeswarm
+ggpol
+
 
 After installation of these packages, please ensure that you can produce ("knit") xaringan presentations. For this, start RStudio and create a new example presentation:
 - In RStudio select from the menu File -> New File -> R Markdown -> From Template -> Ninja Presentation 

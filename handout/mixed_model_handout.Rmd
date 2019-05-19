@@ -1,7 +1,7 @@
 ---
 title: "Mixed Models in R - A Practical Introduction"
 author: "Henrik Singmann"
-date: "January 2018"
+date: "`r format(Sys.time(), '%b %Y')`"
 output: pdf_document
 ---
 
