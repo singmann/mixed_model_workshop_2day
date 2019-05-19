@@ -1,6 +1,8 @@
 ---
 title: "Exercise 2: Many Labs 2 - Mixed Models Analysis"
-output: html_document
+output: 
+  html_document: 
+    self_contained: yes
 ---
 
 ```{r setup, include=FALSE}
