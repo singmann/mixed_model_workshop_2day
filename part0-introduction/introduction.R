@@ -8,6 +8,7 @@ options(htmltools.dir.version = FALSE)
 options(width=110)
 options(digits = 4)
 
+
 ## ---- eval = FALSE-------------------------------------------------------
 ## ---
 ## title: "My Title"
@@ -21,24 +22,30 @@ options(digits = 4)
 ##     highlight: espresso
 ## ---
 
+
 ## ---- echo=FALSE---------------------------------------------------------
 1 + 1
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## iris
+
 
 ## ---- eval=TRUE, echo=FALSE----------------------------------------------
 options(width = 50)
 iris[1:5, 1:3] # [...]
 
+
 ## ---- eval=TRUE----------------------------------------------------------
 iris$Spec
+
 
 ## ---- eval=TRUE----------------------------------------------------------
 library("tibble") 
 iris2 <- as_tibble(iris)
 iris2
 iris2$Spec
+
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## x %>% f
@@ -48,6 +55,7 @@ iris2$Spec
 ## x %>% f(y, .)
 ## x %>% f(y, z = .)
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## f(x)
 ## f(x, y)
@@ -56,16 +64,19 @@ iris2$Spec
 ## f(y, x)
 ## f(y, z = x)
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## library(magrittr)
 ## iris2$Sepal.Length %>%
 ##   mean
+
 
 ## ---- message=FALSE------------------------------------------------------
 library("dplyr")
 iris2 %>% 
   filter(Species == "setosa") %>% 
   summarise(mean(Sepal.Length))
+
 
 ## ------------------------------------------------------------------------
 iris2 %>%
@@ -75,14 +86,17 @@ iris2 %>%
             min_l = min(Sepal.Length),
             sd_l = sd(Sepal.Length))
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## library("ggplot2")
 ## ggplot(iris2, aes(x = Petal.Width, y = Petal.Length)) +
 ##   geom_point()
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## ggplot(iris2, aes(x = Petal.Width, y = Petal.Length, color = Species)) +
 ##   geom_point()
+
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## ggplot(iris2, aes(x = Species, y = Petal.Length)) +

@@ -8,12 +8,14 @@ options(htmltools.dir.version = FALSE)
 options(width=110)
 options(digits = 4)
 
+
 ## ---- message=FALSE------------------------------------------------------
 # Session -> Set Working Directory ->
 # -> To Source File Location
 load("ssk16_dat_prepared_ex2.rda") 
 # full data: https://osf.io/j4swp/
 str(dat2, width=50, strict.width = "cut")
+
 
 ## ---- fig.height=6, dev='svg', message=FALSE-----------------------------
 library("tidyverse")
@@ -24,9 +26,11 @@ ggplot(data = dat2) +
              alpha = 0.2, pch = 16, size = 3) + 
   coord_fixed()
 
+
 ## ------------------------------------------------------------------------
 m_fixed <- lm(if_A_then_B_c ~ B_given_A_c, dat2)
 summary(m_fixed)
+
 
 ## ---- echo=FALSE, dpi=300, fig.width=4, fig.height=4, dev='svg'----------
 ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
@@ -34,11 +38,13 @@ ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) +
   geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
   coord_fixed() 
 
+
 ## ---- echo=FALSE, fig.width=3.5, fig.height=4, dev='svg'-----------------
 ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
   geom_point(alpha = 0.2, pch = 16, size = 3) + 
   geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
   coord_fixed()
+
 
 ## ---- echo=FALSE, dpi=500, fig.width=3.5, fig.height=4, warning=FALSE, message=FALSE----
 library("lme4")
@@ -53,6 +59,7 @@ ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) +
   geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
   coord_fixed()
 
+
 ## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=3.5, warning=FALSE, out.width='20%'----
 m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
 rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
@@ -65,6 +72,7 @@ ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) +
   geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
   coord_fixed() 
 
+
 ## ---- echo=FALSE, dpi=300, fig.width=3.5, fig.height=4, warning=FALSE , out.width='25%'----
 rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
 ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) + 
@@ -75,10 +83,12 @@ ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) +
   geom_abline(intercept = coef(m_fixed)[1], slope = coef(m_fixed)[2], size = 1.5) +
   coord_fixed()
 
+
 ## ------------------------------------------------------------------------
 library("lme4")
 m_r <- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
 summary(m_r)
+
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE, out.width='80%'----
 ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
@@ -86,11 +96,13 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
 
-## ------------------------------------------------------------------------
+
+## ---- message=FALSE------------------------------------------------------
 afex::set_sum_contrasts()
 m_fixed <- lm(if_A_then_B_c ~ 
                 B_given_A_c*rel_cond, dat2)
 summary(m_fixed)
+
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
 slopes <- data_frame(
@@ -105,6 +117,7 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
 
+
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4---------------------
 ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   geom_point(alpha = 0.2, pch = 16, size = 3) + 
@@ -112,6 +125,7 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
               size = 1.5) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
+
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
 m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (0+B_given_A_c|p_id), dat2)
@@ -139,6 +153,7 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
 
+
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=3.5, warning=FALSE----
 m_tmp <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + (1+B_given_A_c|p_id), dat2)
 rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
@@ -164,13 +179,15 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
 
-## ------------------------------------------------------------------------
+
+## ---- message=FALSE------------------------------------------------------
 library("lme4")
 m_p_max <- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
          (B_given_A_c*rel_cond|p_id), dat2)
 summary(m_p_max)$varcor
 summary(m_p_max)$coefficients
+
 
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
@@ -198,14 +215,17 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   theme_light() + coord_fixed() +
   theme(text = element_text(size=20))
 
+
 ## ------------------------------------------------------------------------
 m_max <- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
                 (B_given_A_c*rel_cond|p_id) + 
                 (B_given_A_c*rel_cond|i_id), 
               dat2)
 
+
 ## ------------------------------------------------------------------------
 summary(m_max)
+
 
 ## ---- echo=FALSE, message=FALSE, warning=FALSE, results='hide'-----------
 library("broom")
@@ -223,6 +243,7 @@ partial_pooling_estimates <- tidyr::gather(partial_pooling_estimates, key = "rel
 estimates <- left_join(no_pooling_estimates, partial_pooling_estimates)
 
 
+
 ## ---- echo=FALSE, out.width='500px', out.height='300px', dpi = 500, fig.width=7, fig.height=7*3/5----
 
 ggplot(data = estimates) + 
@@ -233,6 +254,7 @@ ggplot(data = estimates) +
   theme(text=element_text(size=18))
 
 
+
 ## ---- echo=FALSE, out.width='400px', out.height='350px', dpi = 500, fig.width=7, fig.height=7*35/40----
 estimates_l <- estimates %>% 
   gather("key","estimate",no_pooling, partial_pooling) 
@@ -241,6 +263,7 @@ ggplot(data = estimates_l, aes(estimate)) +
   geom_histogram(binwidth = 0.2) + 
   facet_grid(key ~ rel_cond) +
   theme(text=element_text(size=18))
+
 
 ## ---- echo=FALSE, out.width='1000px', out.height='500px', dpi = 500, fig.width=10, fig.height=5----
 
@@ -267,6 +290,7 @@ estimates_l %>%
   scale_color_brewer(palette = "Dark2") 
 
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## library("afex")
 ## mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, dat2, method = "KR")
@@ -274,8 +298,10 @@ estimates_l %>%
 ## mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "LRT")
 ## # mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id), dat2, method = "PB")
 
+
 ## ---- echo=FALSE, results='hide', message=FALSE--------------------------
 library("afex")
+
 
 ## ---- results='hide', message=FALSE--------------------------------------
 m_red <- mixed(
@@ -287,8 +313,10 @@ m_red <- mixed(
 ## ------------------------------------------------------------------------
 summary(m_red)$varcor
 
+
 ## ------------------------------------------------------------------------
 m_red
+
 
 ## ---- echo=FALSE, dpi=500, fig.width=7, fig.height=4, warning=FALSE------
 rnd_coefs <- as_tibble(coef(m_red$full_model)$p_id)
@@ -316,6 +344,7 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
   facet_wrap(~ rel_cond) + 
   coord_fixed()
 
+
 ## ------------------------------------------------------------------------
 library("afex")
 ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id) + 
@@ -324,26 +353,33 @@ ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id)
 ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
                 (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 
+
 ## ------------------------------------------------------------------------
 summary(ma_2)$varcor
 
 ma_3 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
                 (B_given_A_c+rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 
+
 ## ------------------------------------------------------------------------
-ma_3 ## or: nice(ma_2)
+ma_3 ## or: nice(ma_3)
+
 
 ## ------------------------------------------------------------------------
 summary(ma_3) ## lme4 summary() output
 
+
 ## ------------------------------------------------------------------------
 summary(ma_3)$varcor
+
 
 ## ------------------------------------------------------------------------
 summary(ma_3)$coefficients %>% zapsmall
 
+
 ## ---- message=FALSE------------------------------------------------------
 nice(ma_3) %>% as.data.frame()
+
 
 ## ------------------------------------------------------------------------
 library("emmeans")
@@ -351,36 +387,46 @@ emm_options(lmer.df = "asymptotic")
 # or "Kenward-Roger" or "Satterthwaite"
 emmeans(ma_3, "rel_cond")
 
+
 ## ------------------------------------------------------------------------
 p1 <- afex_plot(ma_3, "rel_cond")
 
 p2 <- afex_plot(ma_3, "rel_cond", 
-                random = "p_id", 
+                id = "p_id", 
                 data_geom = ggpol::geom_boxjitter,
                 mapping = "fill")
 
+
 ## ---- fig.width=5.5, fig.height=4, dev='svg'-----------------------------
 p2
+
 
 ## ------------------------------------------------------------------------
 emm_options(lmer.df = "asymptotic") 
 # or "Kenward-Roger" or "Satterthwaite"
 emtrends(ma_3, "rel_cond", var = "B_given_A_c")
 
+
 ## ------------------------------------------------------------------------
 fixef(ma_3$full_model)[2] + fixef(ma_3$full_model)[4] 
 
+
 ## ---- eval=FALSE---------------------------------------------------------
 ## m_fhch <- mixed(log_rt ~ task*stimulus*density*frequency*length +
-##                   (stimulus*density*frequency*length||id) +
-##                   (task||item), fhch2010,
+##                   (stimulus*density*frequency*length|id) +
+##                   (task|item), fhch2010,
 ##                 method = "S", expand_re = TRUE)
+## 
+## ## note: id RE-term has 24 parameters! Estimation of 276 correlations unrealistic!
+
 
 ## ------------------------------------------------------------------------
 data("Machines", package = "MEMSS")
 
+
 ## ---- include=FALSE------------------------------------------------------
 library("tidyverse")
+
 
 ## ---- fig.height=4, dev='svg', echo=FALSE--------------------------------
 ggplot(Machines, aes(x = Machine, y = score)) +
@@ -388,30 +434,38 @@ ggplot(Machines, aes(x = Machine, y = score)) +
   facet_wrap(~ Worker) + 
   theme_light()
 
+
 ## ------------------------------------------------------------------------
 mach1 <- lm(score ~ Machine, Machines)
 car::Anova(mach1, type = 3)
+
 
 ## ------------------------------------------------------------------------
 data("Machines", package = "MEMSS")
 
+
 ## ---- include=FALSE------------------------------------------------------
 library("tidyverse")
+
 
 ## ------------------------------------------------------------------------
 mach1 <- lm(score ~ Machine, Machines)
 car::Anova(mach1, type = 3)
 
-## ---- results="hide"-----------------------------------------------------
+
+## ---- results="hide", warning=FALSE, message=FALSE-----------------------
 (mach2 <- mixed(score~Machine+
                 (Machine|Worker), Machines))
 
-## ---- echo=FALSE---------------------------------------------------------
+
+## ---- echo=FALSE, warning=FALSE------------------------------------------
 mach2 
+
 
 ## ------------------------------------------------------------------------
 pairs(emmeans(mach1, "Machine"),
       adjust = "holm")
+
 
 ## ------------------------------------------------------------------------
 emm_options(lmer.df = "Satterthwaite")
@@ -419,8 +473,10 @@ emm_options(lmer.df = "Satterthwaite")
 pairs(emmeans(mach2, "Machine"),
       adjust = "holm")
 
+
 ## ---- echo=FALSE, message=FALSE, results='hide'--------------------------
 library("sjstats")
+
 
 ## ------------------------------------------------------------------------
 m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
@@ -435,6 +491,7 @@ m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 library("sjstats")
 icc(m1)
 
+
 ## ------------------------------------------------------------------------
 m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # summary(m1)
@@ -445,6 +502,7 @@ m1 <- lmer(if_A_then_B_c ~ 1 + (1|p_id), dat2)
 # Number of obs: 752, groups:  p_id, 94
 
 icc(m1)
+
 
 ## ---- warning=FALSE, message=FALSE---------------------------------------
 m2 <- lmer(if_A_then_B_c ~ 1 + 
@@ -459,6 +517,7 @@ icc(m2)
 ## Caution! ICC for random-slope-intercept models usually 
 ## not meaningful. See 'Note' in `?icc`.
 
+
 ## ---- fig.width=5, fig.height=5------------------------------------------
 
 dat2$residuals <- 
@@ -468,6 +527,7 @@ ggplot(dat2, aes(sample = residuals)) +
   stat_qq_line() +
   theme_bw() +
   theme(text=element_text(size=18))
+
 
 ## ---- fig.width=5, fig.height=2.5, echo=FALSE----------------------------
 dat2 %>% 
@@ -479,6 +539,7 @@ dat2 %>%
   facet_wrap(~key) +
   theme_bw() +
   theme(text=element_text(size=18))
+
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## data("fhch2010")
@@ -505,21 +566,26 @@ dat2 %>%
 ## ## Confidence level used: 0.95
 ## ## Intervals are back-transformed from the logit scale
 
+
 ## ---- fig.width=5, fig.height=4------------------------------------------
 plot(m_max, 
      resid(.,scaled=TRUE) ~ B_given_A | rel_cond)
 
+
 ## ---- fig.width=4, fig.height=4------------------------------------------
 lattice::qqmath(m_max)
+
 
 ## ---- eval=FALSE---------------------------------------------------------
 ## plot(m_max, p_id ~ resid(., scaled=TRUE) )
 ## plot(m_max, resid(., scaled=TRUE) ~ fitted(.) | rel_cond)
 ## ?plot.merMod
 
+
 ## ---- eval=FALSE, include=FALSE------------------------------------------
 ## library("afex")
 ## load("ssk16_dat_tutorial.rda")
+
 
 ## ---- eval=FALSE, include=FALSE------------------------------------------
 ## 
