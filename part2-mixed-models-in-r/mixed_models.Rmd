@@ -2,7 +2,7 @@
 title: "Mixed Models in R"
 subtitle: "A Practical Introduction"
 author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "January 2019"
+date: "`r format(Sys.time(), '%b %Y')`"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
@@ -401,7 +401,7 @@ class: small
 
 ### Fixed Effects Model
 
-```{r}
+```{r, message=FALSE}
 afex::set_sum_contrasts()
 m_fixed <- lm(if_A_then_B_c ~ 
                 B_given_A_c*rel_cond, dat2)
@@ -570,7 +570,7 @@ $$y=\beta_0 + S_0 + (\beta_{B|A}+ S_{B|A})X_{B|A} + (\beta_{r}+ S_{r})X_{r} + (\
 
 --
 .pull-left[
-```{r}
+```{r, message=FALSE}
 library("lme4")
 m_p_max <- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
@@ -932,7 +932,7 @@ ma_3 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id
 ## Using `afex`: ANOVA Table
 
 ```{r}
-ma_3 ## or: nice(ma_2)
+ma_3 ## or: nice(ma_3)
 ```
 
 - Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
@@ -991,7 +991,7 @@ class: small
 p1 <- afex_plot(ma_3, "rel_cond")
 
 p2 <- afex_plot(ma_3, "rel_cond", 
-                random = "p_id", 
+                id = "p_id", 
                 data_geom = ggpol::geom_boxjitter,
                 mapping = "fill")
 ```
@@ -1131,12 +1131,12 @@ car::Anova(mach1, type = 3)
 
 Mixed-model
 
-```{r, results="hide"}
+```{r, results="hide", warning=FALSE, message=FALSE}
 (mach2 <- mixed(score~Machine+
                 (Machine|Worker), Machines))
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 mach2 
 ```
 

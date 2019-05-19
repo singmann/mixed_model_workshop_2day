@@ -36,6 +36,7 @@ Our general goal is to use a partial pooling approach with this data using `lm4`
 2. The second model has has by-participant random-slopes for `B_given_A_c` and random-intercepts, as well as the correlation between the random-effects parameters.
 3. The third (and new) model only has by-participant random intercepts and no random slopes.
 
+
 ```{r}
 m1 <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), dat2)
 m2 <- lmer(if_A_then_B_c ~ B_given_A_c + (B_given_A_c|p_id), dat2)
@@ -69,6 +70,7 @@ summary(m2)$varcor
 summary(m3)$varcor
 ```
 
+
 - Does the choice of random-effects structure affect the fixed-effect estimates and/or inferential statistics?
 ```{r}
 summary(m1)$coefficients
@@ -94,3 +96,4 @@ summary(m4)
 Does this model show any benefit compared to one of the previous models?
 
 *Answer:* Yes. Removing the correlation removes the singular fit. I would prefer this model to all previous models.
+

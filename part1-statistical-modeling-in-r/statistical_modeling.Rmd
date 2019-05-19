@@ -2,7 +2,7 @@
 title: "Statistical Modeling in R"
 subtitle: "The Basics"
 author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "January 2019"
+date: "`r format(Sys.time(), '%b %Y')`"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
@@ -91,12 +91,13 @@ Data from Revelle, Wilt and Rosenthal (2009). `?sat.act`:
 > Items were collected as part of the SAPA project (http://sapa-project.org) to develop online measures of ability (Revelle, Wilt and Rosenthal, 2009). The score means are higher than national norms suggesting both self selection for people taking on line personality and ability tests and a self reporting bias in scores.
 
 ```{r, message=FALSE}
-require(psych)
-data(sat.act)
-sat.act$gender <- factor(sat.act$gender, 1:2, labels = c("male", "female"))
-sat.act$education <- factor(sat.act$education)
+library("tidyverse")
+data(sat.act, package = "psych")
+sat.act <- sat.act %>% 
+  mutate(gender = factor(gender, 1:2, labels = c("male", "female")),
+         education = factor(education)) %>% 
+  filter(!is.na(SATQ))  ## remove 13 NAs in SATQ
 summary(sat.act) # alternatively: psych::describe(sat.act)
-sat.act <- na.omit(sat.act)
 ```
 
 ---
@@ -105,8 +106,7 @@ class: small
 ## Some Example Data
 
 
-```{r, fig.height=3.5, fig.width= 7, dev='svg', message=FALSE}
-library("tidyverse")
+```{r, fig.height=3.75, fig.width= 7, dev='svg', message=FALSE}
 theme_set(theme_bw(base_size = 17))
 sat2 <- sat.act %>% 
   gather(key = "sat_type", value = "sat_value", SATV, SATQ)
@@ -117,18 +117,25 @@ ggplot(sat2, aes(x = sat_value, y = ACT)) +
 
 
 ---
+class: center, middle, inverse
+
+# Learning-Goal:
+# Understand/Interpret Parameters in Linear Regression
+
+
+---
 # Linear Regression Model
 
 - $\bf{y}$ = vector of ACT scores of length $n$ (*dependent variable*)
-- $\bf{x_{\mbox{SATV}}}$ = vector of SATV scores of length $n$ (*independent variable* or *covariate*)
+- $\bf{x_{\mbox{SATQ}}}$ = vector of SATQ scores of length $n$ (*independent variable* or *covariate*)
 
-$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATV}}x_{\mbox{SATV},i}+\epsilon_i, \ \ i = 1, ..., n, \\
+$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATQ}}x_{\mbox{SATQ},i}+\epsilon_i, \ \ i = 1, ..., n, \\
 \bf{\epsilon} \sim \mathcal{N}(0, \sigma^2_{\epsilon}),$$
 where $\bf{x_0}$ is a vector of 1s of length $n$.
 
 - Errors $\bf{\epsilon}$ are assumed to come from a normal distribution (i.e., uncorrelated).
 
-- $\beta_0$ and  $\beta_{\mbox{SATV}}$ are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( $\sigma^2_{\epsilon}$ is also a parameter). $\beta_0$ is also known as the *intercept*.
+- $\beta_0$ and  $\beta_{\mbox{SATQ}}$ are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( $\sigma^2_{\epsilon}$ is also a parameter). $\beta_0$ is also known as the *intercept*.
 
 ******
 
@@ -167,8 +174,9 @@ class: small
 
 .pull-left2[
 ```{r}
-sat.act$SATQ_c <- sat.act$SATQ - mean(sat.act$SATQ)
-sat.act$SATV_c <- sat.act$SATV - mean(sat.act$SATV)
+sat.act <- sat.act %>% 
+  mutate(SATQ_c = SATQ - mean(SATQ),
+         SATV_c = SATV - mean(SATV))
 m2 <- lm(ACT ~ SATQ_c, sat.act)
 summary(m2)
 ```
@@ -219,7 +227,7 @@ ggplot(sat.act,
 ]
 ---
 
-```{r, fig.height=5.5, fig.width=5.5, dev='svg'}
+```{r, fig.height=5.5, fig.width=5.5, dev='svg', message=FALSE}
 GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
 ```
 
@@ -289,10 +297,14 @@ class: inline-grey
 
 - Linear regression summarizes linear relationship with regression parameters, allows prediction
     - Intercept (usually $b_0$ or $\beta_0$): expected value of DV at origin of IVs (i.e., when IVs are 0)
-    - Slopes (e.g., $b_1$ or $\beta_1$): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
+    - Slopes (e.g., $b_1$ or $\beta_1$): gradient of line, amount by which $y$ (DV) increases if $x$ (IV) increases by 1
+
+
 - Linear transformation of variables does not change significance of slope or adequacy of model
     - transformation can simplify interpretation of estimates and comparison across scales
     - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
+
+
 - Regression allows including several predictors
 - Potential problems **multicollinearity** (i.e., predictors correlated among each other)
     - imprecise regression estimates
@@ -527,11 +539,15 @@ summary(lm(ACT ~ 0+SATQ*SATV, sat.act))   # e
 - A linear model attempts to describe data generating process of DV using IVs and distributional assumptions (e.g., normal residuals)
     - R formula interface allows specification in symbolic form
     - Regression equation allows predictions for arbitrary values of IVs
+
+
 - Linear transformation of variables affects interpretation of estimates, but not overall adequacy of model
     - Multiple regression estimates coefficients while "controlling" for other IVs
     - Multicollinearity might affect estimates and precision
+
+
 - Interactions test if effect of one variable depend on value of other variable (i.e., magnitude of effect of one variable changes conditional on value of other variable)
-    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two possibilities)
+    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two equally valid possibilities, context matters)
     - If model involves interaction, estimates of lower order effects are effect if other variables are 0 (centring of variables often provides reasonable interpretation if interactions are involved)
 
 
@@ -982,7 +998,7 @@ sat.act$id <- factor(1:nrow(sat.act))
 ```
 
 for more see:  
-https://singmann.github.io/afex_plot_introduction.html
+https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html
 
 ]
 .pull-right[
@@ -1023,11 +1039,17 @@ emmeans(a2, c("education")) %>% pairs
     - Parameter estimates are only meaningful for factors with two levels.
     - Use `car::Anova()` or `afex` for estimating model and testing terms
     - Use `emmeans` for inspection of results on factor-levels and design cells
+
+
 - When models involve categorical variables and interactions, do not forget appropriate contrasts: `afex::set_sum_contrasts()`
     - Lower-order effects (coefficients and Type 3 tests) are evaluated at the origin of other variables.
     - `afex` always uses appropriate contrasts per default (without need for setting)
+
+
 - Use Type III tests for experimental designs and Type II tests for observational data
     - Both only differ for unbalanced data; in the way how unbalance is treated
+
+
 - Make many plots to understand interactions
     - Be careful when interpreting main effects in light of interactions
 

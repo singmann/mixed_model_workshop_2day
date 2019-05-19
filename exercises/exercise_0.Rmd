@@ -1,6 +1,8 @@
 ---
 title: "Exercise 0: Introduction"
 output: html_notebook
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ## Freeman, Heathcote, Chalmers, and Hockley (2010) data
@@ -20,7 +22,9 @@ The data comes with package `afex`, so we can load it right away. But at first, 
 ```{r, message=FALSE}
 library("tidyverse")
 data("fhch2010", package = "afex") # load 
-fhch <- droplevels(fhch2010[ fhch2010$correct,]) # remove errors
+fhch <- fhch2010 %>% 
+  filter(correct) %>% # remove errors
+  droplevels          # remove empty factor levels
 str(fhch) # structure of the data
 ```
 

@@ -48,12 +48,13 @@ Don't forget to **restart R**: `Session` -> `Restart R`
 Some package we might need.
 ```{r, message=FALSE, warning=FALSE}
 library("tidyverse")
+theme_set(theme_bw())
 library("broom") # not automatically loaded
 ```
 
 I have already downloaded the data from the OSF and prepared it according to the descriptions found there. The prepared data is in `dat`.
 
-```{r} 
+```{r, message=FALSE} 
 # Run complete chunk: Ctrl+Shift+Enter
 
 # You might need to set the correct working directory via the menu: 

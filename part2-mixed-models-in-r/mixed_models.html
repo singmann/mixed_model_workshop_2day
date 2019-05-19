@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
   <head>
     <title>Mixed Models in R</title>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <meta name="author" content="Henrik Singmann (University of Warwick) Twitter: @HenrikSingmann" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 # Mixed Models in R
 ## A Practical Introduction
 ### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### January 2019
+### May 2019
 
 ---
 
@@ -297,7 +297,7 @@ Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B ~ B_given_
 
 
 ```
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 &lt;img src="mixed_models_files/figure-html/unnamed-chunk-7-1.png" width="20%" /&gt;
@@ -326,7 +326,7 @@ m_r &lt;- lmer(if_A_then_B_c ~ B_given_A_c + (1+B_given_A_c|p_id), dat2)
 ```
 
 ```
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 ```r
@@ -338,29 +338,29 @@ summary(m_r)
 ## Formula: if_A_then_B_c ~ B_given_A_c + (1 + B_given_A_c | p_id)
 ##    Data: dat2
 ## 
-## REML criterion at convergence: 256.9
+## REML criterion at convergence: 265.1
 ## 
 ## Scaled residuals: 
 ##    Min     1Q Median     3Q    Max 
-## -2.870 -0.280  0.179  0.568  3.323 
+## -2.841 -0.309  0.217  0.602  3.208 
 ## 
 ## Random effects:
 ##  Groups   Name        Variance Std.Dev. Corr
-##  p_id     (Intercept) 0.00329  0.0574       
-##           B_given_A_c 0.00916  0.0957   1.00
-##  Residual             0.07704  0.2776       
+##  p_id     (Intercept) 0.0000   0.000        
+##           B_given_A_c 0.0159   0.126     NaN
+##  Residual             0.0802   0.283        
 ## Number of obs: 752, groups:  p_id, 94
 ## 
 ## Fixed effects:
 ##             Estimate Std. Error t value
-## (Intercept)  -0.0614     0.0119   -5.17
-## B_given_A_c   0.7252     0.0299   24.29
+## (Intercept)  -0.0614     0.0106    -5.8
+## B_given_A_c   0.7275     0.0315    23.1
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr)
-## B_given_A_c 0.035 
+## B_given_A_c -0.158
 ## convergence code: 0
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 ----
@@ -434,13 +434,6 @@ class: small
 
 ```r
 afex::set_sum_contrasts()
-```
-
-```
-## setting contr.sum globally: options(contrasts=c('contr.sum', 'contr.poly'))
-```
-
-```r
 m_fixed &lt;- lm(if_A_then_B_c ~ 
                 B_given_A_c*rel_cond, dat2)
 summary(m_fixed)
@@ -569,13 +562,6 @@ library("lme4")
 m_p_max &lt;- 
   lmer(if_A_then_B_c ~ B_given_A_c*rel_cond + 
          (B_given_A_c*rel_cond|p_id), dat2)
-```
-
-```
-## singular fit
-```
-
-```r
 summary(m_p_max)$varcor
 ```
 
@@ -594,10 +580,10 @@ summary(m_p_max)$coefficients
 
 ```
 ##                       Estimate Std. Error t value
-## (Intercept)           -0.07924    0.01427  -5.553
-## B_given_A_c            0.63016    0.03007  20.954
-## rel_cond1              0.15044    0.01229  12.245
-## B_given_A_c:rel_cond1  0.17899    0.02985   5.996
+## (Intercept)           -0.07923    0.01427  -5.554
+## B_given_A_c            0.63015    0.03007  20.957
+## rel_cond1              0.15045    0.01228  12.247
+## B_given_A_c:rel_cond1  0.17898    0.02985   5.996
 ```
 ]
 
@@ -630,7 +616,7 @@ m_max &lt;- lmer(if_A_then_B_c ~ B_given_A_c*rel_cond +
 ```
 
 ```
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 
@@ -652,35 +638,35 @@ summary(m_max)
 ## 
 ## Scaled residuals: 
 ##    Min     1Q Median     3Q    Max 
-## -5.112 -0.326  0.015  0.259  3.742 
+## -5.112 -0.325  0.015  0.259  3.739 
 ## 
 ## Random effects:
 ##  Groups   Name                  Variance Std.Dev. Corr             
-##  p_id     (Intercept)           0.01622  0.1274                    
-##           B_given_A_c           0.05396  0.2323    0.14            
-##           rel_cond1             0.01024  0.1012   -0.44 -0.95      
-##           B_given_A_c:rel_cond1 0.05685  0.2384   -1.00 -0.16  0.46
+##  p_id     (Intercept)           0.01623  0.1274                    
+##           B_given_A_c           0.05380  0.2320    0.14            
+##           rel_cond1             0.01021  0.1011   -0.44 -0.95      
+##           B_given_A_c:rel_cond1 0.05683  0.2384   -1.00 -0.16  0.46
 ##  i_id     (Intercept)           0.00116  0.0340                    
-##           B_given_A_c           0.00930  0.0965    0.15            
-##           rel_cond1             0.00175  0.0419   -0.12 -1.00      
-##           B_given_A_c:rel_cond1 0.00349  0.0591   -1.00 -0.13  0.10
-##  Residual                       0.02095  0.1447                    
+##           B_given_A_c           0.00926  0.0962    0.14            
+##           rel_cond1             0.00175  0.0418   -0.12 -1.00      
+##           B_given_A_c:rel_cond1 0.00349  0.0591   -1.00 -0.12  0.10
+##  Residual                       0.02096  0.1448                    
 ## Number of obs: 752, groups:  p_id, 94; i_id, 12
 ## 
 ## Fixed effects:
 ##                       Estimate Std. Error t value
-## (Intercept)            -0.0765     0.0177   -4.33
-## B_given_A_c             0.6262     0.0411   15.24
-## rel_cond1               0.1535     0.0173    8.88
+## (Intercept)            -0.0765     0.0177   -4.32
+## B_given_A_c             0.6262     0.0410   15.26
+## rel_cond1               0.1535     0.0173    8.90
 ## B_given_A_c:rel_cond1   0.1681     0.0350    4.81
 ## 
 ## Correlation of Fixed Effects:
 ##             (Intr) B_g_A_ rl_cn1
-## B_given_A_c  0.086              
-## rel_cond1   -0.225 -0.888       
-## B_gvn_A_:_1 -0.881 -0.096  0.194
+## B_given_A_c  0.083              
+## rel_cond1   -0.223 -0.887       
+## B_gvn_A_:_1 -0.881 -0.093  0.192
 ## convergence code: 0
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 ---
@@ -879,8 +865,8 @@ m_red
 ## Model:     p_id)
 ## Data: dat2
 ##                 Effect       df          F p.value
-## 1          B_given_A_c 1, 89.04 484.41 ***  &lt;.0001
-## 2             rel_cond 1, 89.44 174.44 ***  &lt;.0001
+## 1          B_given_A_c 1, 89.03 484.39 ***  &lt;.0001
+## 2             rel_cond 1, 89.44 174.43 ***  &lt;.0001
 ## 3 B_given_A_c:rel_cond 1, 85.45  42.24 ***  &lt;.0001
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
@@ -910,7 +896,7 @@ ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_
 ```
 
 ```
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 ```
@@ -933,7 +919,7 @@ ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p
 ```
 
 ```
-## singular fit
+## boundary (singular) fit: see ?isSingular
 ```
 
 ```
@@ -953,7 +939,7 @@ summary(ma_2)$varcor
 ```
 ##  Groups   Name                         Std.Dev.
 ##  p_id     (Intercept)                  0.1130  
-##  p_id.1   re1.B_given_A_c              0.1782  
+##  p_id.1   re1.B_given_A_c              0.1781  
 ##  p_id.2   re1.rel_cond1                0.0843  
 ##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.1996  
 ##  i_id     (Intercept)                  0.0181  
@@ -985,7 +971,7 @@ ma_3 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p
 
 
 ```r
-ma_3 ## or: nice(ma_2)
+ma_3 ## or: nice(ma_3)
 ```
 
 ```
@@ -995,8 +981,8 @@ ma_3 ## or: nice(ma_2)
 ## Model:     p_id) + (B_given_A_c + rel_cond || i_id)
 ## Data: dat2
 ##                 Effect       df          F p.value
-## 1          B_given_A_c 1, 18.73 297.43 ***  &lt;.0001
-## 2             rel_cond 1, 23.47 115.19 ***  &lt;.0001
+## 1          B_given_A_c 1, 18.74 297.48 ***  &lt;.0001
+## 2             rel_cond 1, 23.46 115.17 ***  &lt;.0001
 ## 3 B_given_A_c:rel_cond 1, 86.54  38.35 ***  &lt;.0001
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
@@ -1027,22 +1013,22 @@ summary(ma_3) ## lme4 summary() output
 ## 
 ## Random effects:
 ##  Groups   Name                         Variance Std.Dev.
-##  p_id     (Intercept)                  0.012771 0.1130  
-##  p_id.1   re1.B_given_A_c              0.031738 0.1782  
-##  p_id.2   re1.rel_cond1                0.007110 0.0843  
-##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.039836 0.1996  
-##  i_id     (Intercept)                  0.000329 0.0181  
-##  i_id.1   re2.B_given_A_c              0.005432 0.0737  
-##  i_id.2   re2.rel_cond1                0.000824 0.0287  
+##  p_id     (Intercept)                  0.012772 0.1130  
+##  p_id.1   re1.B_given_A_c              0.031735 0.1781  
+##  p_id.2   re1.rel_cond1                0.007109 0.0843  
+##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.039839 0.1996  
+##  i_id     (Intercept)                  0.000328 0.0181  
+##  i_id.1   re2.B_given_A_c              0.005430 0.0737  
+##  i_id.2   re2.rel_cond1                0.000825 0.0287  
 ##  Residual                              0.027674 0.1664  
 ## Number of obs: 752, groups:  p_id, 94; i_id, 12
 ## 
 ## Fixed effects:
 ##                       Estimate Std. Error      df t value Pr(&gt;|t|)    
-## (Intercept)            -0.0728     0.0146 46.3163   -4.98  9.3e-06 ***
-## B_given_A_c             0.6054     0.0351 18.7331   17.25  6.0e-13 ***
-## rel_cond1               0.1498     0.0140 23.4699   10.73  1.6e-10 ***
-## B_given_A_c:rel_cond1   0.1820     0.0294 86.5397    6.19  1.9e-08 ***
+## (Intercept)            -0.0728     0.0146 46.3267   -4.98  9.3e-06 ***
+## B_given_A_c             0.6054     0.0351 18.7396   17.25  5.9e-13 ***
+## rel_cond1               0.1498     0.0140 23.4581   10.73  1.6e-10 ***
+## B_given_A_c:rel_cond1   0.1820     0.0294 86.5370    6.19  1.9e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
@@ -1064,7 +1050,7 @@ summary(ma_3)$varcor
 ```
 ##  Groups   Name                         Std.Dev.
 ##  p_id     (Intercept)                  0.1130  
-##  p_id.1   re1.B_given_A_c              0.1782  
+##  p_id.1   re1.B_given_A_c              0.1781  
 ##  p_id.2   re1.rel_cond1                0.0843  
 ##  p_id.3   re1.B_given_A_c_by_rel_cond1 0.1996  
 ##  i_id     (Intercept)                  0.0181  
@@ -1082,9 +1068,9 @@ summary(ma_3)$coefficients %&gt;% zapsmall
 
 ```
 ##                       Estimate Std. Error    df t value Pr(&gt;|t|)
-## (Intercept)              -0.07       0.01 46.32   -4.98        0
-## B_given_A_c               0.61       0.04 18.73   17.25        0
-## rel_cond1                 0.15       0.01 23.47   10.73        0
+## (Intercept)              -0.07       0.01 46.33   -4.98        0
+## B_given_A_c               0.61       0.04 18.74   17.25        0
+## rel_cond1                 0.15       0.01 23.46   10.73        0
 ## B_given_A_c:rel_cond1     0.18       0.03 86.54    6.19        0
 ```
 
@@ -1102,8 +1088,8 @@ nice(ma_3) %&gt;% as.data.frame()
 
 ```
 ##                 Effect       df          F p.value
-## 1          B_given_A_c 1, 18.73 297.43 ***  &lt;.0001
-## 2             rel_cond 1, 23.47 115.19 ***  &lt;.0001
+## 1          B_given_A_c 1, 18.74 297.48 ***  &lt;.0001
+## 2             rel_cond 1, 23.46 115.17 ***  &lt;.0001
 ## 3 B_given_A_c:rel_cond 1, 86.54  38.35 ***  &lt;.0001
 ```
 
@@ -1124,9 +1110,9 @@ emmeans(ma_3, "rel_cond")
 ```
 
 ```
-##  rel_cond  emmean      SE  df asymp.LCL asymp.UCL
-##  PO        0.1261 0.02021 Inf   0.08649    0.1657
-##  IR       -0.1962 0.02023 Inf  -0.23586   -0.1565
+##  rel_cond emmean     SE  df asymp.LCL asymp.UCL
+##  PO        0.126 0.0202 Inf    0.0865     0.166
+##  IR       -0.196 0.0202 Inf   -0.2359    -0.157
 ## 
 ## Degrees-of-freedom method: asymptotic 
 ## Confidence level used: 0.95
@@ -1155,7 +1141,7 @@ p1 &lt;- afex_plot(ma_3, "rel_cond")
 
 ```r
 p2 &lt;- afex_plot(ma_3, "rel_cond", 
-                random = "p_id", 
+                id = "p_id", 
                 data_geom = ggpol::geom_boxjitter,
                 mapping = "fill")
 ```
@@ -1189,9 +1175,9 @@ emtrends(ma_3, "rel_cond", var = "B_given_A_c")
 ```
 
 ```
-##  rel_cond B_given_A_c.trend      SE  df asymp.LCL asymp.UCL
-##  PO                  0.7875 0.04583 Inf    0.6976    0.8773
-##  IR                  0.4234 0.04574 Inf    0.3337    0.5130
+##  rel_cond B_given_A_c.trend     SE  df asymp.LCL asymp.UCL
+##  PO                   0.787 0.0458 Inf     0.698     0.877
+##  IR                   0.423 0.0457 Inf     0.334     0.513
 ## 
 ## Degrees-of-freedom method: asymptotic 
 ## Confidence level used: 0.95
@@ -1225,18 +1211,20 @@ class: small, inline-grey
 
 # Freeman, Heathcote, Chalmers, and Hockley (2010): Maximal Model
 
-- `task`: between-participants, but within-items (i.e., nested within item)
-- `stimulus`: within-participants (i.e., nested within participants), but between items (i.e., each item is either word or non-word)
-- `density`: within-participants, but between items
-- `frequency`: within-participants, but between items
-- `length`: within-participants, but between items
+- `task`: between participants (i.e., participants are nested within `task`), but within items (i.e., `task` is crossed with item)
+- `stimulus`: within participants (i.e., crossed with participants), but between items (i.e., each item is either word or non-word and thus `item` is nested within `stimulus`)
+- `density`: within participants, but between items
+- `frequency`: within participants, but between items
+- `length`: within participants, but between items
 
 
 ```r
 m_fhch &lt;- mixed(log_rt ~ task*stimulus*density*frequency*length + 
-                  (stimulus*density*frequency*length||id) +
-                  (task||item), fhch2010, 
+                  (stimulus*density*frequency*length|id) +
+                  (task|item), fhch2010, 
                 method = "S", expand_re = TRUE)
+
+## note: id RE-term has 24 parameters! Estimation of 276 correlations unrealistic! 
 ```
 
 
@@ -1349,7 +1337,7 @@ Mixed-model
 ## Model: score ~ Machine + (Machine | Worker)
 ## Data: Machines
 ##    Effect   df        F p.value
-## 1 Machine 2, 4 32.80 **    .003
+## 1 Machine 2, 4 32.85 **    .003
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
@@ -1373,10 +1361,10 @@ pairs(emmeans(mach1, "Machine"),
 ```
 
 ```
-##  contrast estimate    SE df t.ratio p.value
-##  A - B      -7.967 1.925 51  -4.138  0.0003
-##  A - C     -13.917 1.925 51  -7.228  &lt;.0001
-##  B - C      -5.950 1.925 51  -3.090  0.0032
+##  contrast estimate   SE df t.ratio p.value
+##  A - B       -7.97 1.93 51 -4.138  0.0003 
+##  A - C      -13.92 1.93 51 -7.228  &lt;.0001 
+##  B - C       -5.95 1.93 51 -3.090  0.0032 
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
@@ -1396,10 +1384,10 @@ pairs(emmeans(mach2, "Machine"),
 ```
 
 ```
-##  contrast estimate    SE df t.ratio p.value
-##  A - B      -7.967 2.421  5  -3.291  0.0434
-##  A - C     -13.917 1.540  5  -9.036  0.0008
-##  B - C      -5.950 2.446  5  -2.432  0.0592
+##  contrast estimate   SE   df t.ratio p.value
+##  A - B       -7.97 2.42 5.00 -3.290  0.0435 
+##  A - C      -13.92 1.54 5.01 -9.044  0.0008 
+##  B - C       -5.95 2.44 5.01 -2.434  0.0590 
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
@@ -1562,7 +1550,7 @@ icc(m2)
 ## Family : gaussian (identity)
 ## Formula: if_A_then_B_c ~ 1 + (rel_cond:B_given_A_c | p_id)
 ## 
-##   ICC (p_id): 0.4115
+##   ICC (p_id): 0.4114
 ```
 
 ```r
@@ -1750,6 +1738,7 @@ plot(m_max, resid(., scaled=TRUE) ~ fitted(.) | rel_cond)
 - https://cran.r-project.org/web/packages/influence.ME/index.html
 - https://cran.r-project.org/web/packages/DHARMa/index.html
     </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
 "highlightStyle": "github",
@@ -1760,16 +1749,57 @@ plot(m_max, resid(., scaled=TRUE) ~ fitted(.) | rel_cond)
 if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
   window.dispatchEvent(new Event('resize'));
 });
-(function() {
-  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
   if (!r) return;
   s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
   d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
 })();</script>
 
 <script>
 (function() {
-  var i, text, code, codes = document.getElementsByTagName('code');
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
   for (i = 0; i < codes.length;) {
     code = codes[i];
     if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
@@ -1783,7 +1813,8 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
     }
     i++;
   }
-})();
+};
+slideshow._releaseMath(document);
 </script>
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

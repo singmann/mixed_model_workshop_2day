@@ -8,11 +8,13 @@ theme_set(theme_bw(base_size = 12) +
                   panel.grid.minor.x = element_blank()))
 w <- read_csv("weather_wb.csv")
 
+
 ## ------------------------------------------------------------------------
 w %>% 
   group_by(id) %>% 
   summarise(n = n()) %>% 
   do(psych::describe(.$n))
+
 
 ## ------------------------------------------------------------------------
 w %>% 
@@ -22,11 +24,13 @@ w %>%
   select(-id) %>% 
   do(psych::describe(.))
 
+
 ## ---- fig.width=4, fig.height=4, dpi=125---------------------------------
 ## Rmarkdown settings: fig.width=4, fig.height=4, dpi=125
 ggplot(w, aes(x = sunh, y = swb, color = id)) +
   geom_point(alpha = 0.6, position = position_jitter()) +
   scale_color_viridis()
+
 
 ## ---- fig.width=2, fig.height=2.5, dpi=150-------------------------------
 no_all <- w %>% 
@@ -40,14 +44,18 @@ ggplot(no_slope, aes(estimate)) +
   geom_vline(aes(xintercept = mean(estimate)), col='red', size=2)
 
 
+
 ## ------------------------------------------------------------------------
 summary(lm(estimate ~ 1, no_slope))
+
 
 ## ------------------------------------------------------------------------
 mean(no_slope$estimate > 0)
 
+
 ## ------------------------------------------------------------------------
 psych::describe(no_slope$estimate)
+
 
 ## ---- fig.width=4, fig.height=4, dpi=125---------------------------------
 no_plot <- no_all %>% 
@@ -58,6 +66,7 @@ ggplot(w, aes(x = sunh, y = swb, color = id)) +
   geom_point(alpha = 0.8, position = position_jitter()) +
   geom_abline(data = no_plot, aes(slope = sunh, intercept = `(Intercept)`, color = id), alpha = 0.3) +
   scale_color_viridis()
+
 
 ## ---- fig.width=4, fig.height=4, dpi=125---------------------------------
 no_plot <- no_all %>% 
@@ -73,14 +82,17 @@ ggplot(w, aes(x = sunh, y = swb, color = id)) +
   theme(legend.position = "none")
 
 
+
 ## ------------------------------------------------------------------------
 cp1 <- lm(swb ~ sunh, w)
 summary(cp1)
+
 
 ## ---- fig.width=4, fig.height=3.5, dpi=125-------------------------------
 ggplot(w, aes(x = sunh, y = swb)) +
   geom_point(alpha = 0.6, position = position_jitter()) +
   geom_abline(intercept = coef(cp1)[1], slope = coef(cp1)[2])
+
 
 ## ------------------------------------------------------------------------
 w_agg <- w %>% 
@@ -90,15 +102,18 @@ w_agg <- w %>%
 cp2 <- lm(swb ~ sunh, w_agg)
 summary(cp2)
 
+
 ## ---- fig.width=3, fig.height=3, dpi=125---------------------------------
 ggplot(w_agg, aes(x = sunh, y = swb)) +
   geom_point() +
   geom_abline(intercept = coef(cp2)[1], slope = coef(cp2)[2])
 
+
 ## ---- message=FALSE------------------------------------------------------
 library("lme4")
 mm1 <- lmer(swb ~ sunh + (sunh|id), w)
 summary(mm1)
+
 
 
 ## ---- fig.width=4, fig.height=3.5, dpi=125-------------------------------
@@ -110,6 +125,7 @@ ggplot(data = w, aes(x = sunh, y = swb)) +
                                      slope = "sunh"), 
               color = "lightgrey", size = 1.2) +
   geom_abline(intercept = fixef(mm1)[1], slope = fixef(mm1)[2], size = 1.5)
+
 
 
 ## ---- eval=FALSE---------------------------------------------------------

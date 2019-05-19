@@ -2,7 +2,7 @@
 title: "Mixed Models in R"
 subtitle: "An Applied Introduction"
 author: "Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'>@HenrikSingmann</a>"
-date: "January 2019"
+date: "`r format(Sys.time(), '%b %Y')`"
 output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]

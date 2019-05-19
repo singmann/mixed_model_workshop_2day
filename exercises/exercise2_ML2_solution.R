@@ -1,6 +1,7 @@
 ## ----setup, include=FALSE------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
 
+
 ## ---- message=FALSE------------------------------------------------------
 ## preparation and loading
 library("tidyverse")
@@ -18,12 +19,14 @@ d <- d %>%
   )
 str(d)
 
+
 ## ------------------------------------------------------------------------
 ## 1. full model shows a singular fit:
 m_max <-  mixed(correct ~ fluency*source + (1|uID) + (fluency*source|syllogism), d, 
                 method = "S", progress = FALSE) ## suppress output
 summary(m_max)$varcor
 m_max
+
 
 ## ------------------------------------------------------------------------
 ## r1. full model without correlations also shows singular fit
@@ -51,6 +54,7 @@ m_r5 <-  mixed(correct ~ fluency*source + (1|uID) + (1|syllogism), d,
                method = "S", progress = FALSE)
 summary(m_r5)$varcor
 
+
 ## ------------------------------------------------------------------------
 ## full model shows significant interaction
 m_max
@@ -61,13 +65,23 @@ m_r5
 # models in between also shows significant interaction
 m_r4
 
+
 ## ------------------------------------------------------------------------
 emmeans(m_r5, "fluency", by = "source")
 
-pairs(emmeans(m_r5, "fluency", by = "source"))
+emmeans(m_r5, "fluency", by = "source") %>% 
+  pairs()
+
+## note, previous solution does not adequately control for multiple testing:
+emmeans(m_r5, "fluency", by = "source") %>% 
+  pairs() %>% 
+  update(by = NULL) %>% 
+  summary(adjust = "holm", infer = TRUE) # infer = TRUE gives CIs
 
 ## results very similar for full model
-pairs(emmeans(m_max, "fluency", by = "source"))
+emmeans(m_max, "fluency", by = "source") %>% 
+  pairs()
+
 
 
 ## ---- fig.width=6, fig.height=3, dev='svg'-------------------------------
@@ -75,22 +89,24 @@ pairs(emmeans(m_max, "fluency", by = "source"))
 afex_plot(m_r5, "source", "fluency")
 
 ## Maybe we can try with aggregating for each participant:
-afex_plot(m_r5, "source", "fluency", random = "uID")
+afex_plot(m_r5, "source", "fluency", id = "uID")
 
 ## For this plot, reordering the x-axis might be a good idea
 #   and we might change a few more settings for data in bg
 #   also, error bars look to wide given our knowledge of effect
-afex_plot(m_r5, "source", "fluency", random = "uID", error = "mean",
+afex_plot(m_r5, "source", "fluency", id = "uID", error = "mean",
           data_geom = ggbeeswarm::geom_beeswarm, 
           data_alpha = 0.15,
           data_arg = list(cex = 0.2, dodge.width = 0.5, color = "black")) + 
   scale_x_discrete(limits=c("tilburgcaf", "purkyne", "uniporto"))
 
+
 ## ---- fig.width=6, fig.height=3, dev='svg'-------------------------------
 ## Maybe not different lines, but different panels? 
-afex_plot(m_r5, panel = "source", x = "fluency", random = "uID", error = "mean",
+afex_plot(m_r5, panel = "source", x = "fluency", id = "uID", error = "mean",
           data_alpha = 0.15,
           data_arg = list(cex = 0.8, dodge.width = 0.5, color = "black"))
+
 
 ## ------------------------------------------------------------------------
 # m5_0 <-  mixed(correct ~ fluency*source*syllogism + (syllogism|uID), d, 
@@ -106,6 +122,7 @@ emmeans(m5, "fluency", by = "source")
 pairs(emmeans(m5, "fluency", by = "source"))
 
 
+
 ## ---- message=FALSE------------------------------------------------------
 
 a6 <- aov_car(correct ~ fluency*source*syllogism + Error(uID/syllogism), d)
@@ -116,8 +133,9 @@ a6
 
 pairs(emmeans(a6, "fluency", by = "source"))
 
+
 ## ---- fig.width=5, fig.height=3, dev='svg'-------------------------------
-afex_plot(m5, "source", "fluency", random = "uID", 
+afex_plot(m5, "source", "fluency", id = "uID", 
           data_geom = ggbeeswarm::geom_beeswarm, 
           data_alpha = 0.15, dodge = 0.6,
           data_arg = list(cex = 0.3, dodge.width = 0.6, color = "black")) + 

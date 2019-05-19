@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
   <head>
     <title>Statistical Modeling in R</title>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <meta name="author" content="Henrik Singmann (University of Warwick) Twitter: @HenrikSingmann" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 # Statistical Modeling in R
 ## The Basics
 ### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### January 2019
+### May 2019
 
 ---
 
@@ -89,26 +89,23 @@ Data from Revelle, Wilt and Rosenthal (2009). `?sat.act`:
 
 
 ```r
-require(psych)
-data(sat.act)
-sat.act$gender &lt;- factor(sat.act$gender, 1:2, labels = c("male", "female"))
-sat.act$education &lt;- factor(sat.act$education)
+library("tidyverse")
+data(sat.act, package = "psych")
+sat.act &lt;- sat.act %&gt;% 
+  mutate(gender = factor(gender, 1:2, labels = c("male", "female")),
+         education = factor(education)) %&gt;% 
+  filter(!is.na(SATQ))  ## remove 13 NAs in SATQ
 summary(sat.act) # alternatively: psych::describe(sat.act)
 ```
 
 ```
 ##     gender    education      age            ACT            SATV          SATQ    
-##  male  :247   0: 57     Min.   :13.0   Min.   : 3.0   Min.   :200   Min.   :200  
-##  female:453   1: 45     1st Qu.:19.0   1st Qu.:25.0   1st Qu.:550   1st Qu.:530  
-##               2: 44     Median :22.0   Median :29.0   Median :620   Median :620  
-##               3:275     Mean   :25.6   Mean   :28.6   Mean   :612   Mean   :610  
-##               4:138     3rd Qu.:29.0   3rd Qu.:32.0   3rd Qu.:700   3rd Qu.:700  
-##               5:141     Max.   :65.0   Max.   :36.0   Max.   :800   Max.   :800  
-##                                                                     NA's   :13
-```
-
-```r
-sat.act &lt;- na.omit(sat.act)
+##  male  :245   0: 56     Min.   :13.0   Min.   : 3.0   Min.   :200   Min.   :200  
+##  female:442   1: 43     1st Qu.:19.0   1st Qu.:25.0   1st Qu.:550   1st Qu.:530  
+##               2: 43     Median :22.0   Median :29.0   Median :620   Median :620  
+##               3:269     Mean   :25.6   Mean   :28.6   Mean   :612   Mean   :610  
+##               4:137     3rd Qu.:29.0   3rd Qu.:32.0   3rd Qu.:700   3rd Qu.:700  
+##               5:139     Max.   :65.0   Max.   :36.0   Max.   :800   Max.   :800
 ```
 
 ---
@@ -119,7 +116,6 @@ class: small
 
 
 ```r
-library("tidyverse")
 theme_set(theme_bw(base_size = 17))
 sat2 &lt;- sat.act %&gt;% 
   gather(key = "sat_type", value = "sat_value", SATV, SATQ)
@@ -132,18 +128,25 @@ ggplot(sat2, aes(x = sat_value, y = ACT)) +
 
 
 ---
+class: center, middle, inverse
+
+# Learning-Goal:
+# Understand/Interpret Parameters in Linear Regression
+
+
+---
 # Linear Regression Model
 
 - `\(\bf{y}\)` = vector of ACT scores of length `\(n\)` (*dependent variable*)
-- `\(\bf{x_{\mbox{SATV}}}\)` = vector of SATV scores of length `\(n\)` (*independent variable* or *covariate*)
+- `\(\bf{x_{\mbox{SATQ}}}\)` = vector of SATQ scores of length `\(n\)` (*independent variable* or *covariate*)
 
-`$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATV}}x_{\mbox{SATV},i}+\epsilon_i, \ \ i = 1, ..., n, \\
+`$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATQ}}x_{\mbox{SATQ},i}+\epsilon_i, \ \ i = 1, ..., n, \\
 \bf{\epsilon} \sim \mathcal{N}(0, \sigma^2_{\epsilon}),$$`
 where `\(\bf{x_0}\)` is a vector of 1s of length `\(n\)`.
 
 - Errors `\(\bf{\epsilon}\)` are assumed to come from a normal distribution (i.e., uncorrelated).
 
-- `\(\beta_0\)` and  `\(\beta_{\mbox{SATV}}\)` are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( `\(\sigma^2_{\epsilon}\)` is also a parameter). `\(\beta_0\)` is also known as the *intercept*.
+- `\(\beta_0\)` and  `\(\beta_{\mbox{SATQ}}\)` are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( `\(\sigma^2_{\epsilon}\)` is also a parameter). `\(\beta_0\)` is also known as the *intercept*.
 
 ******
 
@@ -214,8 +217,9 @@ class: small
 .pull-left2[
 
 ```r
-sat.act$SATQ_c &lt;- sat.act$SATQ - mean(sat.act$SATQ)
-sat.act$SATV_c &lt;- sat.act$SATV - mean(sat.act$SATV)
+sat.act &lt;- sat.act %&gt;% 
+  mutate(SATQ_c = SATQ - mean(SATQ),
+         SATV_c = SATV - mean(SATV))
 m2 &lt;- lm(ACT ~ SATQ_c, sat.act)
 summary(m2)
 ```
@@ -443,10 +447,14 @@ class: inline-grey
 
 - Linear regression summarizes linear relationship with regression parameters, allows prediction
     - Intercept (usually `\(b_0\)` or `\(\beta_0\)`): expected value of DV at origin of IVs (i.e., when IVs are 0)
-    - Slopes (e.g., `\(b_1\)` or `\(\beta_1\)`): gradient of line, amount by which y (DV) increases if x (IV) increases by 1
+    - Slopes (e.g., `\(b_1\)` or `\(\beta_1\)`): gradient of line, amount by which `\(y\)` (DV) increases if `\(x\)` (IV) increases by 1
+
+
 - Linear transformation of variables does not change significance of slope or adequacy of model
     - transformation can simplify interpretation of estimates and comparison across scales
     - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
+
+
 - Regression allows including several predictors
 - Potential problems **multicollinearity** (i.e., predictors correlated among each other)
     - imprecise regression estimates
@@ -612,10 +620,10 @@ pres_t
 ```
 
 ```
-##  education prestige.trend    SE df lower.CL upper.CL
-##       8.01          141.7 40.25 98    61.78    221.5
-##      10.74          186.9 32.51 98   122.41    251.4
-##      13.47          232.2 34.95 98   162.82    301.6
+##  education prestige.trend   SE df lower.CL upper.CL
+##       8.01            142 40.2 98     61.8      222
+##      10.74            187 32.5 98    122.4      251
+##      13.47            232 35.0 98    162.8      302
 ## 
 ## Confidence level used: 0.95
 ```
@@ -658,10 +666,10 @@ edu_t
 ```
 
 ```
-##  prestige education.trend    SE df lower.CL upper.CL
-##     29.63          -503.7 246.5 98   -992.9    -14.5
-##     46.83          -218.5 203.4 98   -622.1    185.1
-##     64.04            66.9 225.6 98   -380.7    514.5
+##  prestige education.trend  SE df lower.CL upper.CL
+##      29.6          -503.7 246 98     -993    -14.5
+##      46.8          -218.5 203 98     -622    185.1
+##      64.0            66.9 226 98     -381    514.5
 ## 
 ## Confidence level used: 0.95
 ```
@@ -819,11 +827,15 @@ coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
 - A linear model attempts to describe data generating process of DV using IVs and distributional assumptions (e.g., normal residuals)
     - R formula interface allows specification in symbolic form
     - Regression equation allows predictions for arbitrary values of IVs
+
+
 - Linear transformation of variables affects interpretation of estimates, but not overall adequacy of model
     - Multiple regression estimates coefficients while "controlling" for other IVs
     - Multicollinearity might affect estimates and precision
+
+
 - Interactions test if effect of one variable depend on value of other variable (i.e., magnitude of effect of one variable changes conditional on value of other variable)
-    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two possibilities)
+    - Interpretation of interaction often not obvious (e.g., 2-way interaction has two equally valid possibilities, context matters)
     - If model involves interaction, estimates of lower order effects are effect if other variables are 0 (centring of variables often provides reasonable interpretation if interactions are involved)
 
 
@@ -858,8 +870,6 @@ str(sat.act) ## alternatively tibble::glimpse(sat.act)
 ##  $ SATV_c   : num  -112.3 -12.3 -132.3 -62.3 -12.3 ...
 ##  $ resid_q  : num  -36.3 -102.1 -53.2 -49.2 -52.1 ...
 ##  $ resid_v  : num  -42.76 57.24 -43.82 -5.39 25.68 ...
-##  - attr(*, "na.action")= 'omit' Named int  130 197 248 364 376 419 498 515 523 581 ...
-##   ..- attr(*, "names")= chr  "31294" "32448" "33259" "35106" ...
 ```
 
 - Numerical covariates are `int` or `num`.
@@ -957,12 +967,12 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 ```
 
 ```
-##       (Intercept) genderfemale
-## 29442           1            1
-## 29457           1            1
-## 29498           1            1
-## 29503           1            0
-## 29504           1            0
+##   (Intercept) genderfemale
+## 1           1            1
+## 2           1            1
+## 3           1            1
+## 4           1            0
+## 5           1            0
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
@@ -985,12 +995,12 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 ```
 
 ```
-##       (Intercept) genderfemale
-## 29442           1            1
-## 29457           1            1
-## 29498           1            1
-## 29503           1            0
-## 29504           1            0
+##   (Intercept) genderfemale
+## 1           1            1
+## 2           1            1
+## 3           1            1
+## 4           1            0
+## 5           1            0
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
@@ -1001,6 +1011,15 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 
 ```r
 afex::set_sum_contrasts()
+```
+
+```
+## Registered S3 methods overwritten by 'lme4':
+##   method                          from
+##   cooks.distance.influence.merMod car 
+##   influence.merMod                car 
+##   dfbeta.influence.merMod         car 
+##   dfbetas.influence.merMod        car
 ```
 
 ```
@@ -1016,12 +1035,12 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 ```
 
 ```
-##       (Intercept) gender1
-## 29442           1      -1
-## 29457           1      -1
-## 29498           1      -1
-## 29503           1       1
-## 29504           1       1
+##   (Intercept) gender1
+## 1           1      -1
+## 2           1      -1
+## 3           1      -1
+## 4           1       1
+## 5           1       1
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
@@ -1159,7 +1178,7 @@ sat.act %&gt;%
 
 ```
 ## # A tibble: 12 x 3
-## # Groups:   gender [?]
+## # Groups:   gender [2]
 ##    gender education `mean(ACT)`
 ##    &lt;fct&gt;  &lt;fct&gt;           &lt;dbl&gt;
 ##  1 male   0                29.0
@@ -1509,13 +1528,13 @@ library("emmeans")
 ```
 
 ```
-##  education emmean     SE  df lower.CL upper.CL
-##  0          27.55 0.6357 675    26.30    28.80
-##  1          27.21 0.7299 675    25.77    28.64
-##  2          26.93 0.7268 675    25.50    28.35
-##  3          28.42 0.3182 675    27.79    29.04
-##  4          29.16 0.4201 675    28.33    29.98
-##  5          29.97 0.4285 675    29.13    30.81
+##  education emmean    SE  df lower.CL upper.CL
+##  0           27.6 0.636 675     26.3     28.8
+##  1           27.2 0.730 675     25.8     28.6
+##  2           26.9 0.727 675     25.5     28.4
+##  3           28.4 0.318 675     27.8     29.0
+##  4           29.2 0.420 675     28.3     30.0
+##  5           30.0 0.428 675     29.1     30.8
 ## 
 ## Results are averaged over the levels of: gender 
 ## Confidence level used: 0.95
@@ -1533,22 +1552,22 @@ pairs(emms, adjust='holm')
 ```
 
 ```
-##  contrast estimate     SE  df t.ratio p.value
-##  0 - 1      0.3469 0.9679 675   0.358  1.0000
-##  0 - 2      0.6269 0.9656 675   0.649  1.0000
-##  0 - 3     -0.8640 0.7109 675  -1.215  0.9658
-##  0 - 4     -1.6036 0.7620 675  -2.105  0.3213
-##  0 - 5     -2.4192 0.7666 675  -3.156  0.0217
-##  1 - 2      0.2801 1.0300 675   0.272  1.0000
-##  1 - 3     -1.2109 0.7963 675  -1.521  0.9017
-##  1 - 4     -1.9505 0.8422 675  -2.316  0.2086
-##  1 - 5     -2.7660 0.8464 675  -3.268  0.0159
-##  2 - 3     -1.4909 0.7934 675  -1.879  0.4851
-##  2 - 4     -2.2305 0.8394 675  -2.657  0.0887
-##  2 - 5     -3.0461 0.8437 675  -3.611  0.0049
-##  3 - 4     -0.7396 0.5270 675  -1.403  0.9658
-##  3 - 5     -1.5552 0.5337 675  -2.914  0.0443
-##  4 - 5     -0.8155 0.6001 675  -1.359  0.9658
+##  contrast estimate    SE  df t.ratio p.value
+##  0 - 1       0.347 0.968 675  0.358  1.0000 
+##  0 - 2       0.627 0.966 675  0.649  1.0000 
+##  0 - 3      -0.864 0.711 675 -1.215  0.9658 
+##  0 - 4      -1.604 0.762 675 -2.105  0.3213 
+##  0 - 5      -2.419 0.767 675 -3.156  0.0217 
+##  1 - 2       0.280 1.030 675  0.272  1.0000 
+##  1 - 3      -1.211 0.796 675 -1.521  0.9017 
+##  1 - 4      -1.950 0.842 675 -2.316  0.2086 
+##  1 - 5      -2.766 0.846 675 -3.268  0.0159 
+##  2 - 3      -1.491 0.793 675 -1.879  0.4851 
+##  2 - 4      -2.231 0.839 675 -2.657  0.0887 
+##  2 - 5      -3.046 0.844 675 -3.611  0.0049 
+##  3 - 4      -0.740 0.527 675 -1.403  0.9658 
+##  3 - 5      -1.555 0.534 675 -2.914  0.0443 
+##  4 - 5      -0.816 0.600 675 -1.359  0.9658 
 ## 
 ## Results are averaged over the levels of: gender 
 ## P value adjustment: holm method for 15 tests
@@ -1568,13 +1587,13 @@ library("emmeans")
 ```
 
 ```
-##  education emmean     SE  df lower.CL upper.CL
-##  0          27.55 0.6357 675    26.30    28.80
-##  1          27.21 0.7299 675    25.77    28.64
-##  2          26.93 0.7268 675    25.50    28.35
-##  3          28.42 0.3182 675    27.79    29.04
-##  4          29.16 0.4201 675    28.33    29.98
-##  5          29.97 0.4285 675    29.13    30.81
+##  education emmean    SE  df lower.CL upper.CL
+##  0           27.6 0.636 675     26.3     28.8
+##  1           27.2 0.730 675     25.8     28.6
+##  2           26.9 0.727 675     25.5     28.4
+##  3           28.4 0.318 675     27.8     29.0
+##  4           29.2 0.420 675     28.3     30.0
+##  5           30.0 0.428 675     29.1     30.8
 ## 
 ## Results are averaged over the levels of: gender 
 ## Confidence level used: 0.95
@@ -1597,10 +1616,10 @@ contrast(emms, cs, adjust = "holm")
 ```
 
 ```
-##  contrast estimate     SE  df t.ratio p.value
-##  12-45       2.498 0.5960 675   4.191  0.0001
-##  0-3         0.864 0.7109 675   1.215  0.2246
-##  all-last    2.120 0.5033 675   4.213  0.0001
+##  contrast estimate    SE  df t.ratio p.value
+##  12-45       2.498 0.596 675 4.191   0.0001 
+##  0-3         0.864 0.711 675 1.215   0.2246 
+##  all-last    2.120 0.503 675 4.213   0.0001 
 ## 
 ## Results are averaged over the levels of: gender 
 ## P value adjustment: holm method for 3 tests
@@ -1699,7 +1718,7 @@ sat.act$id &lt;- factor(1:nrow(sat.act))
 ```
 
 for more see:  
-https://singmann.github.io/afex_plot_introduction.html
+https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html
 
 ]
 .pull-right[
@@ -1731,9 +1750,9 @@ emmeans(a2, "gender")
 ```
 
 ```
-##  gender emmean     SE  df lower.CL upper.CL
-##  male    28.45 0.3428 675    27.78    29.12
-##  female  27.96 0.3107 675    27.35    28.57
+##  gender emmean    SE  df lower.CL upper.CL
+##  male     28.5 0.343 675     27.8     29.1
+##  female   28.0 0.311 675     27.3     28.6
 ## 
 ## Results are averaged over the levels of: education 
 ## Confidence level used: 0.95
@@ -1752,22 +1771,22 @@ emmeans(a2, c("education")) %&gt;% pairs
 ```
 
 ```
-##  contrast estimate     SE  df t.ratio p.value
-##  0 - 1      0.3469 0.9679 675   0.358  0.9992
-##  0 - 2      0.6269 0.9656 675   0.649  0.9871
-##  0 - 3     -0.8640 0.7109 675  -1.215  0.8294
-##  0 - 4     -1.6036 0.7620 675  -2.105  0.2861
-##  0 - 5     -2.4192 0.7666 675  -3.156  0.0207
-##  1 - 2      0.2801 1.0300 675   0.272  0.9998
-##  1 - 3     -1.2109 0.7963 675  -1.521  0.6510
-##  1 - 4     -1.9505 0.8422 675  -2.316  0.1890
-##  1 - 5     -2.7660 0.8464 675  -3.268  0.0144
-##  2 - 3     -1.4909 0.7934 675  -1.879  0.4159
-##  2 - 4     -2.2305 0.8394 675  -2.657  0.0854
-##  2 - 5     -3.0461 0.8437 675  -3.611  0.0044
-##  3 - 4     -0.7396 0.5270 675  -1.403  0.7250
-##  3 - 5     -1.5552 0.5337 675  -2.914  0.0427
-##  4 - 5     -0.8155 0.6001 675  -1.359  0.7515
+##  contrast estimate    SE  df t.ratio p.value
+##  0 - 1       0.347 0.968 675  0.358  0.9992 
+##  0 - 2       0.627 0.966 675  0.649  0.9871 
+##  0 - 3      -0.864 0.711 675 -1.215  0.8294 
+##  0 - 4      -1.604 0.762 675 -2.105  0.2861 
+##  0 - 5      -2.419 0.767 675 -3.156  0.0207 
+##  1 - 2       0.280 1.030 675  0.272  0.9998 
+##  1 - 3      -1.211 0.796 675 -1.521  0.6510 
+##  1 - 4      -1.950 0.842 675 -2.316  0.1890 
+##  1 - 5      -2.766 0.846 675 -3.268  0.0144 
+##  2 - 3      -1.491 0.793 675 -1.879  0.4159 
+##  2 - 4      -2.231 0.839 675 -2.657  0.0854 
+##  2 - 5      -3.046 0.844 675 -3.611  0.0044 
+##  3 - 4      -0.740 0.527 675 -1.403  0.7250 
+##  3 - 5      -1.555 0.534 675 -2.914  0.0427 
+##  4 - 5      -0.816 0.600 675 -1.359  0.7515 
 ## 
 ## Results are averaged over the levels of: gender 
 ## P value adjustment: tukey method for comparing a family of 6 estimates
@@ -1783,11 +1802,17 @@ emmeans(a2, c("education")) %&gt;% pairs
     - Parameter estimates are only meaningful for factors with two levels.
     - Use `car::Anova()` or `afex` for estimating model and testing terms
     - Use `emmeans` for inspection of results on factor-levels and design cells
+
+
 - When models involve categorical variables and interactions, do not forget appropriate contrasts: `afex::set_sum_contrasts()`
     - Lower-order effects (coefficients and Type 3 tests) are evaluated at the origin of other variables.
     - `afex` always uses appropriate contrasts per default (without need for setting)
+
+
 - Use Type III tests for experimental designs and Type II tests for observational data
     - Both only differ for unbalanced data; in the way how unbalance is treated
+
+
 - Make many plots to understand interactions
     - Be careful when interpreting main effects in light of interactions
 
@@ -1975,10 +2000,10 @@ pairs(emmeans(mmach, "Machine"),
 ```
 
 ```
-##  contrast estimate    SE df t.ratio p.value
-##  A - B      -7.967 3.515 15  -2.266  0.0773
-##  A - C     -13.917 3.515 15  -3.959  0.0038
-##  B - C      -5.950 3.515 15  -1.693  0.1112
+##  contrast estimate   SE df t.ratio p.value
+##  A - B       -7.97 3.52 15 -2.266  0.0773 
+##  A - C      -13.92 3.52 15 -3.959  0.0038 
+##  B - C       -5.95 3.52 15 -1.693  0.1112 
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
@@ -2052,10 +2077,10 @@ pairs(emmeans(a1, "Machine"),
 ```
 
 ```
-##  contrast estimate    SE df t.ratio p.value
-##  A - B      -7.967 2.177 10  -3.660  0.0088
-##  A - C     -13.917 2.177 10  -6.393  0.0002
-##  B - C      -5.950 2.177 10  -2.733  0.0211
+##  contrast estimate   SE df t.ratio p.value
+##  A - B       -7.97 2.18 10 -3.660  0.0088 
+##  A - C      -13.92 2.18 10 -6.393  0.0002 
+##  B - C       -5.95 2.18 10 -2.733  0.0211 
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
@@ -2071,10 +2096,10 @@ pairs(emmeans(mmach, "Machine"),
 ```
 
 ```
-##  contrast estimate    SE df t.ratio p.value
-##  A - B      -7.967 3.515 15  -2.266  0.0773
-##  A - C     -13.917 3.515 15  -3.959  0.0038
-##  B - C      -5.950 3.515 15  -1.693  0.1112
+##  contrast estimate   SE df t.ratio p.value
+##  A - B       -7.97 3.52 15 -2.266  0.0773 
+##  A - C      -13.92 3.52 15 -3.959  0.0038 
+##  B - C       -5.95 3.52 15 -1.693  0.1112 
 ## 
 ## P value adjustment: holm method for 3 tests
 ```
@@ -2157,6 +2182,7 @@ class: center, middle, inverse
 - Revelle, William, Wilt, Joshua, and Rosenthal, Allen (2009) Personality and Cognition: The Personality-Cognition Link. In Gruszka, Alexandra and Matthews, Gerald and Szymura, Blazej (Eds.) _Handbook of Individual Differences in Cognition: Attention, Memory and Executive Control_, Springer.
 - Skovgaard-Olsen, N., Singmann, H., &amp; Klauer, K. C. (2016). The relevance effect and conditionals. *Cognition*, 150, 26-36. https://doi.org/10.1016/j.cognition.2015.12.017
     </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
 <script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
 "highlightStyle": "github",
@@ -2167,16 +2193,57 @@ class: center, middle, inverse
 if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
   window.dispatchEvent(new Event('resize'));
 });
-(function() {
-  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
   if (!r) return;
   s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
   d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
 })();</script>
 
 <script>
 (function() {
-  var i, text, code, codes = document.getElementsByTagName('code');
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
   for (i = 0; i < codes.length;) {
     code = codes[i];
     if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
@@ -2190,7 +2257,8 @@ if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
     }
     i++;
   }
-})();
+};
+slideshow._releaseMath(document);
 </script>
 <!-- dynamically load mathjax for compatibility with self-contained -->
 <script>

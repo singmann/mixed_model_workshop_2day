@@ -86,7 +86,7 @@ str(d)
 ```
 
 
-2. The maximal model should show some convergence problems (i.e., "singular fit" and a correlation among random components of 1.00). Reduce the random-effects structure of the model until you find a model that does not show any convergence problems.
+2. The maximal model should show some convergence problems (i.e., "singular fit" and/or a correlation among random components of 1.00). Reduce the random-effects structure of the model until you find a model that does not show any convergence problems.
 
 ```{r}
 ## reduced models
@@ -104,7 +104,7 @@ str(d)
 ## follow-up tests
 ```
 
-4. Make a plot of the `fluency` by `source` interaction using `afex_plot`. Spend some time thinking about how to make this plot really nice. Is the default for argument `random` really a good idea here? What is with the default argument of `error`? Remember, `afex_plot` has a vignette showing many examples: https://singmann.github.io/afex_plot_introduction.html 
+4. Make a plot of the `fluency` by `source` interaction using `afex_plot`. Spend some time thinking about how to make this plot really nice. Is the default for argument `id` really a good idea here? What is with the default argument of `error`? Remember, `afex_plot` has a vignette showing many examples: https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html 
 
 ```{r, fig.width=5, fig.height=4, dev='svg'}
 ## plot code goes here ...

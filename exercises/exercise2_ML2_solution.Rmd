@@ -88,7 +88,7 @@ m_max
 ```
 
 
-2. The maximal model should show some convergence problems (i.e., "singular fit" and a correlation among random components of 1.00). Reduce the random-effects structure of the model until you find a model that does not show any convergence problems.
+2. The maximal model should show some convergence problems (i.e., "singular fit" and/or a correlation among random components of 1.00). Reduce the random-effects structure of the model until you find a model that does not show any convergence problems.
 
 ```{r}
 ## r1. full model without correlations also shows singular fit
@@ -150,19 +150,19 @@ emmeans(m_max, "fluency", by = "source") %>%
 
 ```
 
-4. Make a plot of the `fluency` by `source` interaction using `afex_plot`. Spend some time thinking about how to make this plot really nice. Is the default for argument `random` really a good idea here? What is with the default argument of `error`? Remember, `afex_plot` has a vignette showing many examples: https://singmann.github.io/afex_plot_introduction.html 
+4. Make a plot of the `fluency` by `source` interaction using `afex_plot`. Spend some time thinking about how to make this plot really nice. Is the default for argument `id` really a good idea here? What is with the default argument of `error`? Remember, `afex_plot` has a vignette showing many examples: https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html 
 
 ```{r, fig.width=6, fig.height=3, dev='svg'}
 ## something is wrong here:
 afex_plot(m_r5, "source", "fluency")
 
 ## Maybe we can try with aggregating for each participant:
-afex_plot(m_r5, "source", "fluency", random = "uID")
+afex_plot(m_r5, "source", "fluency", id = "uID")
 
 ## For this plot, reordering the x-axis might be a good idea
 #   and we might change a few more settings for data in bg
 #   also, error bars look to wide given our knowledge of effect
-afex_plot(m_r5, "source", "fluency", random = "uID", error = "mean",
+afex_plot(m_r5, "source", "fluency", id = "uID", error = "mean",
           data_geom = ggbeeswarm::geom_beeswarm, 
           data_alpha = 0.15,
           data_arg = list(cex = 0.2, dodge.width = 0.5, color = "black")) + 
@@ -172,7 +172,7 @@ afex_plot(m_r5, "source", "fluency", random = "uID", error = "mean",
 
 ```{r, fig.width=6, fig.height=3, dev='svg'}
 ## Maybe not different lines, but different panels? 
-afex_plot(m_r5, panel = "source", x = "fluency", random = "uID", error = "mean",
+afex_plot(m_r5, panel = "source", x = "fluency", id = "uID", error = "mean",
           data_alpha = 0.15,
           data_arg = list(cex = 0.8, dodge.width = 0.5, color = "black"))
 ```
@@ -224,7 +224,7 @@ pairs(emmeans(a6, "fluency", by = "source"))
 7. Which model do you think is the best model making the best argument? Why? Make a plot based on this model (using `afex_plot`) that you would put in a paper of yours (can be the same plot as above of course).
 
 ```{r, fig.width=5, fig.height=3, dev='svg'}
-afex_plot(m5, "source", "fluency", random = "uID", 
+afex_plot(m5, "source", "fluency", id = "uID", 
           data_geom = ggbeeswarm::geom_beeswarm, 
           data_alpha = 0.15, dodge = 0.6,
           data_arg = list(cex = 0.3, dodge.width = 0.6, color = "black")) + 

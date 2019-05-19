@@ -20,7 +20,7 @@ The data comes with `R`, so we can load it right away. But at first, we load the
 library("tidyverse")
 theme_set(theme_bw(base_size = 17))
 data(USArrests)  
-glimpse(USArrests)
+str(USArrests)
 ```
 
 The `data.frame` has 50 observations (one for each state) on 4 variables. The columns in the data are:
@@ -32,7 +32,7 @@ The `data.frame` has 50 observations (one for each state) on 4 variables. The co
 
 Several of the variables show correlations among each other.
 
-```{r, fig.width=5, fig.height=5}
+```{r, fig.width=5, fig.height=5, message=FALSE}
 GGally::ggscatmat(USArrests)
 ```
 

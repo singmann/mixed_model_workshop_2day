@@ -1,20 +1,24 @@
 ## ---- message=FALSE------------------------------------------------------
 library("tidyverse")
 data("fhch2010", package = "afex") # load 
-fhch <- droplevels(fhch2010[ fhch2010$correct,]) # remove errors
+fhch <- fhch2010 %>% 
+  filter(correct) %>% # remove errors
+  droplevels          # remove empty factor levels
 str(fhch) # structure of the data
-library("tidyverse")
+
 
 ## ------------------------------------------------------------------------
 fhch %>% 
   group_by(task) %>% 
   summarise(m = mean(rt))
 
+
 ## ------------------------------------------------------------------------
 fhch %>% 
   group_by(task) %>% 
   summarise(m = mean(rt),
             sd = sd(rt))
+
 
 ## ------------------------------------------------------------------------
 fhch %>% 
@@ -24,15 +28,18 @@ fhch %>%
             sd = sd(rt))
 
 
+
 ## ------------------------------------------------------------------------
 agg1 <- fhch %>% 
   filter(task == "lexdec") %>% 
   group_by(id, length) %>% 
   summarise(mrt = mean(rt))
 
+
 ## ------------------------------------------------------------------------
 ggplot(agg1, aes(x = length, y = mrt)) +
   geom_jitter()
+
 
 ## ------------------------------------------------------------------------
 ggplot(agg1, aes(x = length, y = mrt)) +
@@ -40,6 +47,7 @@ ggplot(agg1, aes(x = length, y = mrt)) +
   geom_violin(fill = "transparent") +
   stat_summary(color = "red") +
   theme_bw()
+
 
 ## ------------------------------------------------------------------------
 agg2 <- fhch %>% 
@@ -49,6 +57,7 @@ agg2 <- fhch %>%
 ggplot(agg2, aes(x = length, y = mrt, color = density, group = density)) +
   geom_point(position = position_dodge(0.25)) +
   stat_summary(position = position_dodge(0.25))
+
 
 
 ## ------------------------------------------------------------------------
