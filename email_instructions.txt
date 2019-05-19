@@ -22,6 +22,8 @@ GGally
 ggbeeswarm
 ggpol
 
+If you already had the latest version of R installed or could not install the latest version, at least make sure your packages are up to date by running (it makes some sense to run this every few months):
+update.packages(ask = FALSE, checkBuilt = TRUE)
 
 After installation of these packages, please ensure that you can produce ("knit") xaringan presentations. For this, start RStudio and create a new example presentation:
 - In RStudio select from the menu File -> New File -> R Markdown -> From Template -> Ninja Presentation 
