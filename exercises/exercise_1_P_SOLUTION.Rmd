@@ -144,8 +144,8 @@ As discussed before, the initial research question was if the Equation holds (i.
 
 ### Complete Pooling
 
-- Your task is to calculate the regression parameter (and potentially also the intercept) for within-subject condition (i.e., relationship of `dv` and `if_A_then_B` and `B_given_A` for each level of `rel_cond`).
-- There are different ways how to interpret complete pooling. Either one ignores individual differences or one aggregates across them. Can you find the different ways for implementing no pooling here?
+- Your task is to calculate the regression parameter (and potentially also the intercept) for within-subject condition (i.e., relationship of `if_A_then_B` and `B_given_A` for each level of `rel_cond`).
+- There are different ways how to interpret complete pooling. Either one ignores individual differences or one aggregates across them. Can you find the different ways for implementing complete pooling here?
 
 ### Solution
 
@@ -192,7 +192,7 @@ emtrends(ex2_comp_3, "rel_cond", var = "B_given_A")
 
 ### No Pooling 
 
-- Your task is to calculate the regression parameter (and potentially also the intercept) for each participant and within-subject condition (i.e., relationship of `dv` and `if_A_then_B` and `B_given_A` for each `p_id` and level of `rel_cond`).
+- Your task is to calculate the regression parameter (and potentially also the intercept) for each participant and within-subject condition (i.e., relationship of `if_A_then_B` and `B_given_A` for each `p_id` and level of `rel_cond`).
 - Then compare the individual regression parameters across conditions (i.e., for each level of `rel_cond`). Do this comparison in a graphical way and also statistically (i.e., ANOVA using `afex`).
 
 ```{r}

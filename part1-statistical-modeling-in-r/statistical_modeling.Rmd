@@ -637,6 +637,10 @@ class: small
 model.matrix(ACT ~ gender, sat.act[1:5,])
 ```
 
+```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
+afex::set_sum_contrasts()
+```
+
 ```{r}
 afex::set_sum_contrasts()
 ```
