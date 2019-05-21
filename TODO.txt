@@ -1,0 +1,2 @@
+- Renumber exercises (1.1, 1.2, etc.)
+- Move exercise 2.1 somewhat earlier. Maybe after first iteration of introducing mixed models.
