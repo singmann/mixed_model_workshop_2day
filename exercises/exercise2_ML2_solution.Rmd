@@ -120,7 +120,7 @@ summary(m_r5)$varcor
 ```
 
 
-3. Maximal and reduced models should all show a significant interaction between `source` and `fluency`. Use follow-up tests (e.g., using `emmeans`) to investigate this pattern. Does any of the samples show the pattern predicted by Alter et al. (2007)? When in doubt use the model without identifiability issues for that.
+3. Maximal and reduced models should all show a significant interaction between `source` and `fluency`. Use follow-up tests (e.g., using `emmeans`) to investigate this pattern. Does any of the samples show the pattern predicted by Alter et al. (2007)? When in doubt use the model without convergence issues for that.
 
 ```{r}
 ## full model shows significant interaction
