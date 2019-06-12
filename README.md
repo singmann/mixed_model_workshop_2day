@@ -29,7 +29,12 @@ In addition, the repo contains a [`pdf` handout](https://github.com/singmann/mix
 - A html 5 compatible browser to view the slides.
 - `RStudio`: https://www.rstudio.com/products/rstudio/download3/#download
 
-### Overview
+### An introduction to modern R, statistical modeling, and mixed models.
+
+This workshop will cover several topics in an integrative fashion. The first half day will be devoted to an overview of modern tools for data science in R: Rmarkdown and the tidyverse. Based on this knowledge, the second half day will be devoted to an introduction to statistical modeling in R. The second day will introduce mixed models. Mixed models are a generalization of ordinary regression models that explicitly capture dependencies among related data points via random-effects parameters. Such dependencies are ubiquitous in psychology due to collecting more than one data point from the same participant and/or from the same item. Compared to traditional analyses approaches that ignore these dependencies, mixed models provide more accurate (and generalizable) estimates, improved statistical power, and non-inflated Type I errors. The workshop will introduce the functionality of lme4, the gold standard for estimating mixed models in R. In addition, it will introduce the functionality of afex, which simplifies many aspects of using lme4, such as the calculation of p-values for mixed models. Attendants are expected to have knowledge of R. 
+
+
+### Longer Overview
 
 In order to increase statistical power and precision, many data sets in cognitive and behavioral sciences contain more than one data point from each unit of observation (e.g., participant), often across different experimental conditions. Such *repeated-measures* pose a problem to most standard statistical procedures such as ordinary least-squares regression, (between-subjects) ANOVA, or generalized linear models (e.g., logistic regression) as these procedures assume that the data points are *independent and identically distributed*. In case of repeated measures, the independence assumption is expected to be violated. For example, observations coming from the same participant are usually correlated - they are more likely to be similar to each other than two observations coming from two different participants. 
 
@@ -39,7 +44,7 @@ In recent years, mixed models have become increasingly popular. One of the main 
 
 Despite a number of high impact publications that introduce mixed models to a wide variety of audiences (e.g., Baayen et al., 2008; Judd, Westfall, & Kenny, 2012) the application of mixed models in practice is far from trivial. Applying mixed models requires a number of steps and decisions that are not necessarily part of the methodological arsenal of every researcher. The goal of the workshop is to change this and to introduce mixed models in such a way that they can be effectively used and the results communicated.
 
-The workshop is split into two parts main parts and one interlude. The focus of the first part is not on mixed models, but on the basic knowledge in statistical modeling with R that necessary for competently using mixed models. The second part focuses exclusively on mixed models. It introduces the key concepts and simultaneously shows how to fit mixed models of increasing complexity. Each part will take approximately 3 hours (including breaks). The time between the two parts will be used to provide a short introduction to the `tidyverse` (Wickham & Grolemund, 2017), a modern set of tools for data science in R that are especially useful in this context.
+The workshop is split into three parts. The first half day will be devoted to an overview of modern tools for data science in `R`: `Rmarkdown` and the `tidyverse`. Based on this knowledge, the second half day will be devoted to an introduction to statistical modeling in `R`. The second day will introduce mixed models using the `lme4` package, the gold standard for estimating mixed models in R. In addition, it will introduce the functionality of `afex` (the package of the convenor), which simplifies many aspects of using lme4, such as the calculation of p-values for mixed models.
 
 Participants of the workshop need some basic knowledge of R. For example, they should be able to read in data, select subsets of the data, and estimate a linear regression model. Participants without any R knowledge will likely nor profit from the workshop. 
 
