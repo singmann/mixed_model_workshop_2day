@@ -1,2 +1,4 @@
 - Renumber exercises (1.1, 1.2, etc.)
 - Move exercise 2.1 somewhat earlier. Maybe after first iteration of introducing mixed models.
+- add mixed model steps to handout.
+- change first example data set (no more gender factor please)
