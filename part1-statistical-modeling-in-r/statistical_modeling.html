@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 # Statistical Modeling in R
 ## The Basics
 ### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### May 2019
+### Jul 2019
 
 ---
 
@@ -82,46 +82,56 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Statistical_model) (emphasis adde
 ---
 class: small
 
-# Some Example Data
+# Some Example Data: De Simoni &amp; von Bastian (2018, JEP:G)
 
-Data from Revelle, Wilt and Rosenthal (2009). `?sat.act`:
-&gt; Items were collected as part of the SAPA project (http://sapa-project.org) to develop online measures of ability (Revelle, Wilt and Rosenthal, 2009). The score means are higher than national norms suggesting both self selection for people taking on line personality and ability tests and a self reporting bias in scores.
+- Partial data from working memory training study, post training measurement
+- 197 participants 
+    - 2 testing orders
+    - 3 training groups
+- 3 continuous variables, each is average of 4 tasks:
+    - accuracy in working memory updating task
+    - `\(d'\)` (d-prime) working memory binding task (pair recognition)
+    - accuracy in 4 different reasoning tasks (diagramming relationships, letter sets, location sets, Raven matrices)
 
 
 ```r
 library("tidyverse")
-data(sat.act, package = "psych")
-sat.act &lt;- sat.act %&gt;% 
-  mutate(gender = factor(gender, 1:2, labels = c("male", "female")),
-         education = factor(education)) %&gt;% 
-  filter(!is.na(SATQ))  ## remove 13 NAs in SATQ
-summary(sat.act) # alternatively: psych::describe(sat.act)
+load("ds_vb_18.rda")  ## or: load(url("http://singmann.org/download/r/ds_vb_18.rda"))
+summary(ds_vb_18)     ## or: psych::describe(ds_vb_18)
 ```
 
 ```
-##     gender    education      age            ACT            SATV          SATQ    
-##  male  :245   0: 56     Min.   :13.0   Min.   : 3.0   Min.   :200   Min.   :200  
-##  female:442   1: 43     1st Qu.:19.0   1st Qu.:25.0   1st Qu.:550   1st Qu.:530  
-##               2: 43     Median :22.0   Median :29.0   Median :620   Median :620  
-##               3:269     Mean   :25.6   Mean   :28.6   Mean   :612   Mean   :610  
-##               4:137     3rd Qu.:29.0   3rd Qu.:32.0   3rd Qu.:700   3rd Qu.:700  
-##               5:139     Max.   :65.0   Max.   :36.0   Max.   :800   Max.   :800
+##       code     order       training     updating         binding          reasoning    
+##  2      :  1   A: 94   control :72   Min.   :0.0744   Min.   :-0.0272   Min.   :0.148  
+##  3      :  1   B:103   updating:59   1st Qu.:0.4714   1st Qu.: 0.8250   1st Qu.:0.578  
+##  4      :  1           binding :66   Median :0.5872   Median : 1.1923   Median :0.692  
+##  5      :  1                         Mean   :0.5756   Mean   : 1.2790   Mean   :0.669  
+##  6      :  1                         3rd Qu.:0.6942   3rd Qu.: 1.6166   3rd Qu.:0.767  
+##  7      :  1                         Max.   :0.9023   Max.   : 3.0249   Max.   :0.932  
+##  (Other):191
 ```
+
+- Source: https://osf.io/fy5ku/ 
 
 ---
 class: small
 
-## Some Example Data
+![](desimoni-vonbastian-training.png)
+
+---
+class: small
+
+## Some Example Data:  De Simoni &amp; von Bastian (2018, JEP:G)
 
 
 
 ```r
 theme_set(theme_bw(base_size = 17))
-sat2 &lt;- sat.act %&gt;% 
-  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
-ggplot(sat2, aes(x = sat_value, y = ACT)) +
-  geom_point(alpha = 0.2) +
-  facet_wrap(~ sat_type)
+wm2 &lt;- ds_vb_18 %&gt;% 
+  gather(key = "wm_task", value = "wm_performance", binding, updating)
+ggplot(wm2, aes(x = wm_performance, y = reasoning)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ wm_task, scales = "free_x")
 ```
 
 ![](statistical_modeling_files/figure-html/unnamed-chunk-2-1.svg)&lt;!-- --&gt;
@@ -135,18 +145,18 @@ class: center, middle, inverse
 
 
 ---
-# Linear Regression Model
+# Linear Regression Model: Does WM predict reasoning?
 
-- `\(\bf{y}\)` = vector of ACT scores of length `\(n\)` (*dependent variable*)
-- `\(\bf{x_{\mbox{SATQ}}}\)` = vector of SATQ scores of length `\(n\)` (*independent variable* or *covariate*)
+- `\(\bf{y}\)` = vector of reasoning accuracies of length `\(n\)` (*dependent variable*)
+- `\(\bf{x_{\mbox{WM}}}\)` = vector of WM performance of length `\(n\)` (*independent variable* or *covariate*)
 
-`$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATQ}}x_{\mbox{SATQ},i}+\epsilon_i, \ \ i = 1, ..., n, \\
+`$$y_i = \beta_0x_{0,i}+\beta_{\mbox{WM}}x_{\mbox{WM},i}+\epsilon_i, \ \ i = 1, ..., n, \\
 \bf{\epsilon} \sim \mathcal{N}(0, \sigma^2_{\epsilon}),$$`
 where `\(\bf{x_0}\)` is a vector of 1s of length `\(n\)`.
 
 - Errors `\(\bf{\epsilon}\)` are assumed to come from a normal distribution (i.e., uncorrelated).
 
-- `\(\beta_0\)` and  `\(\beta_{\mbox{SATQ}}\)` are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( `\(\sigma^2_{\epsilon}\)` is also a parameter). `\(\beta_0\)` is also known as the *intercept*.
+- `\(\beta_0\)` and  `\(\beta_{\mbox{WM}}\)` are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( `\(\sigma^2_{\epsilon}\)` is also a parameter). `\(\beta_0\)` is also known as the *intercept*.
 
 ******
 
@@ -161,29 +171,29 @@ class: small
 .pull-left2[
 
 ```r
-m1 &lt;- lm(ACT ~ SATQ, sat.act)
+m1 &lt;- lm(reasoning ~ binding, ds_vb_18)
 summary(m1)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ SATQ, data = sat.act)
+## lm(formula = reasoning ~ binding, data = ds_vb_18)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -20.394  -2.573   0.267   2.267  16.511 
+## -0.3986 -0.0767  0.0135  0.0873  0.2332 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) 13.58325    0.80249    16.9   &lt;2e-16 ***
-## SATQ         0.02453    0.00129    19.0   &lt;2e-16 ***
+## (Intercept)   0.5352     0.0187   28.58  &lt; 2e-16 ***
+## binding       0.1047     0.0132    7.95  1.5e-13 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 3.91 on 685 degrees of freedom
-## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
-## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+## Residual standard error: 0.115 on 195 degrees of freedom
+## Multiple R-squared:  0.245,	Adjusted R-squared:  0.241 
+## F-statistic: 63.2 on 1 and 195 DF,  p-value: 1.48e-13
 ```
 
 ]
@@ -194,14 +204,15 @@ coef(m1)
 ```
 
 ```
-## (Intercept)        SATQ 
-##    13.58325     0.02453
+## (Intercept)     binding 
+##      0.5352      0.1047
 ```
 
 
 ```r
-ggplot(sat.act, 
-       aes(x = SATQ, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -217,32 +228,32 @@ class: small
 .pull-left2[
 
 ```r
-sat.act &lt;- sat.act %&gt;% 
-  mutate(SATQ_c = SATQ - mean(SATQ),
-         SATV_c = SATV - mean(SATV))
-m2 &lt;- lm(ACT ~ SATQ_c, sat.act)
+ds_vb_18 &lt;- ds_vb_18 %&gt;% 
+  mutate(binding_c = binding - mean(binding),
+         updating_c = updating - mean(updating))
+m2 &lt;- lm(reasoning ~ binding_c, ds_vb_18)
 summary(m2)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ SATQ_c, data = sat.act)
+## lm(formula = reasoning ~ binding_c, data = ds_vb_18)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -20.394  -2.573   0.267   2.267  16.511 
+## -0.3986 -0.0767  0.0135  0.0873  0.2332 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) 28.55022    0.14931     191   &lt;2e-16 ***
-## SATQ_c       0.02453    0.00129      19   &lt;2e-16 ***
+## (Intercept)  0.66914    0.00817   81.88  &lt; 2e-16 ***
+## binding_c    0.10472    0.01317    7.95  1.5e-13 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 3.91 on 685 degrees of freedom
-## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
-## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+## Residual standard error: 0.115 on 195 degrees of freedom
+## Multiple R-squared:  0.245,	Adjusted R-squared:  0.241 
+## F-statistic: 63.2 on 1 and 195 DF,  p-value: 1.48e-13
 ```
 
 ]
@@ -253,14 +264,15 @@ coef(m2)
 ```
 
 ```
-## (Intercept)      SATQ_c 
-##    28.55022     0.02453
+## (Intercept)   binding_c 
+##      0.6691      0.1047
 ```
 
 
 ```r
-ggplot(sat.act, 
-       aes(x = SATQ_c, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding_c, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -277,29 +289,29 @@ class: small
 .pull-left2[
 
 ```r
-m2b &lt;- lm(ACT ~ scale(SATQ), sat.act)
+m2b &lt;- lm(reasoning ~ scale(binding), ds_vb_18)
 summary(m2b)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ scale(SATQ), data = sat.act)
+## lm(formula = reasoning ~ scale(binding), data = ds_vb_18)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -20.394  -2.573   0.267   2.267  16.511 
+## -0.3986 -0.0767  0.0135  0.0873  0.2332 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)   28.550      0.149     191   &lt;2e-16 ***
-## scale(SATQ)    2.836      0.149      19   &lt;2e-16 ***
+##                Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)     0.66914    0.00817   81.88  &lt; 2e-16 ***
+## scale(binding)  0.06512    0.00819    7.95  1.5e-13 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 3.91 on 685 degrees of freedom
-## Multiple R-squared:  0.345,	Adjusted R-squared:  0.344 
-## F-statistic:  360 on 1 and 685 DF,  p-value: &lt;2e-16
+## Residual standard error: 0.115 on 195 degrees of freedom
+## Multiple R-squared:  0.245,	Adjusted R-squared:  0.241 
+## F-statistic: 63.2 on 1 and 195 DF,  p-value: 1.48e-13
 ```
 
 - `scale()` calculates z-transformation (minus mean divided by SD) and can be used within formulas
@@ -313,15 +325,15 @@ coef(m2b)
 ```
 
 ```
-## (Intercept) scale(SATQ) 
-##      28.550       2.836
+##    (Intercept) scale(binding) 
+##        0.66914        0.06512
 ```
 
 
 ```r
-ggplot(sat.act, 
-       aes(x = scale(SATQ), 
-           y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = scale(binding), 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -333,7 +345,7 @@ ggplot(sat.act,
 
 
 ```r
-GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+GGally::ggscatmat(ds_vb_18[, 4:6], alpha = 0.3)
 ```
 
 ![](statistical_modeling_files/figure-html/unnamed-chunk-12-1.svg)&lt;!-- --&gt;
@@ -345,34 +357,34 @@ class: small
 
 
 ```r
-m3 &lt;- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+m3 &lt;- lm(reasoning ~ binding_c + updating_c, ds_vb_18)
 summary(m3)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ SATQ_c + SATV_c, data = sat.act)
+## lm(formula = reasoning ~ binding_c + updating_c, data = ds_vb_18)
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -16.680  -2.308   0.083   2.192  18.549 
+##      Min       1Q   Median       3Q      Max 
+## -0.29348 -0.05412  0.00319  0.06944  0.22621 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept) 28.55022    0.14280  199.93  &lt; 2e-16 ***
-## SATQ_c       0.01614    0.00162    9.99  &lt; 2e-16 ***
-## SATV_c       0.01328    0.00165    8.05  3.6e-15 ***
+## (Intercept)  0.66914    0.00693   96.56  &lt; 2e-16 ***
+## binding_c    0.02025    0.01474    1.37     0.17    
+## updating_c   0.47673    0.05428    8.78  8.3e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 3.74 on 684 degrees of freedom
-## Multiple R-squared:  0.401,	Adjusted R-squared:   0.4 
-## F-statistic:  229 on 2 and 684 DF,  p-value: &lt;2e-16
+## Residual standard error: 0.0973 on 194 degrees of freedom
+## Multiple R-squared:  0.46,	Adjusted R-squared:  0.454 
+## F-statistic: 82.5 on 2 and 194 DF,  p-value: &lt;2e-16
 ```
 
 --
-- Why is estimate of `SATQ_c` reduced by 35% (was `0.02453`)?
+- Why is estimate of `binding_c` reduced by &gt; 80% (was 0.1047)?
 --
 
 - In multiple regression, parameter estimates reflect effect after "controlling" for influence of all other predictors!
@@ -392,39 +404,39 @@ summary(m3)$coefficients %&gt;% zapsmall(6)
 
 ```
 ##             Estimate Std. Error t value Pr(&gt;|t|)
-## (Intercept)  28.5502     0.1428 199.928        0
-## SATQ_c        0.0161     0.0016   9.990        0
-## SATV_c        0.0133     0.0016   8.054        0
+## (Intercept)   0.6691     0.0069  96.557   0.0000
+## binding_c     0.0202     0.0147   1.374   0.1711
+## updating_c    0.4767     0.0543   8.783   0.0000
 ```
 
 --
 
 
 ```r
-## SATQ
-m3_q &lt;- lm(SATQ_c ~ SATV_c, sat.act)
-sat.act$resid_q &lt;- residuals(m3_q)
-summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+## binding
+m3_b &lt;- lm(binding_c ~ updating_c, ds_vb_18)
+ds_vb_18$resid_b &lt;- residuals(m3_b)
+summary(lm(reasoning ~ 0 + resid_b, ds_vb_18))$coefficients 
 ```
 
 ```
 ##         Estimate Std. Error t value Pr(&gt;|t|)
-## resid_q  0.01614    0.01249   1.292   0.1968
+## resid_b  0.02025     0.1036  0.1955   0.8452
 ```
 
 --
 
 
 ```r
-## SATV
-m3_v &lt;- lm(SATV_c ~ SATQ_c, sat.act)
-sat.act$resid_v &lt;- residuals(m3_v)
-summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+## updating
+m3_u &lt;- lm(updating_c ~ binding_c, ds_vb_18)
+ds_vb_18$resid_u &lt;- residuals(m3_u)
+summary(lm(reasoning ~ 0 + resid_u, ds_vb_18))$coefficients 
 ```
 
 ```
 ##         Estimate Std. Error t value Pr(&gt;|t|)
-## resid_v  0.01328    0.01276   1.041   0.2982
+## resid_u   0.4767       0.38   1.255   0.2111
 ```
 
 ---
@@ -730,7 +742,7 @@ Prestige &lt;- Prestige %&gt;%
 class: inline-grey
 # Formula Interface for Statistical Models: `~`
 
-Allows symbolic specification of statistical model, e.g. linear models: `lm(ACT ~ SATQ, sat.act)`
+Allows symbolic specification of statistical model, e.g. linear models: `lm(reasoning ~ binding, ds_vb_18)`
 
 Everything to the left of `~` is the dependent variable:
 ```r
@@ -756,41 +768,43 @@ class: small
 
 
 ```r
-lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
-lm(ACT ~ SATQ_c : SATV_c, sat.act)   # b
-lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act) # c
-lm(ACT ~ SATQ_c*SATV_c, sat.act)     # d
-lm(ACT ~ 0+SATQ_c*SATV_c, sat.act)   # e
+lm(reasoning ~ binding + updating, ds_vb_18)   # a
+lm(reasoning ~ binding : updating, ds_vb_18)   # b
+lm(reasoning ~ 0 + binding:updating, ds_vb_18) # c
+lm(reasoning ~ binding*updating, ds_vb_18)     # d
+lm(reasoning ~ 0+binding*updating, ds_vb_18)   # e
 ```
+
+
 
 --
 .pull-left[
 
 ```r
-coef(lm(ACT ~ SATQ_c + SATV_c, sat.act))   # a
+coef(lm(reasoning ~ binding + updating, ds_vb_18))
 ```
 
 ```
-## (Intercept)      SATQ_c      SATV_c 
-##    28.55022     0.01614     0.01328
-```
-
-```r
-coef(lm(ACT ~ SATQ_c : SATV_c, sat.act))   # b
-```
-
-```
-##   (Intercept) SATQ_c:SATV_c 
-##     2.895e+01    -4.757e-05
+## (Intercept)     binding    updating 
+##     0.36883     0.02025     0.47673
 ```
 
 ```r
-coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
+coef(lm(reasoning ~ binding : updating, ds_vb_18))
 ```
 
 ```
-## SATQ_c:SATV_c 
-##     0.0006005
+##      (Intercept) binding:updating 
+##           0.5565           0.1400
+```
+
+```r
+coef(lm(reasoning ~ 0+binding:updating, ds_vb_18))
+```
+
+```
+## binding:updating 
+##           0.6208
 ```
 
 
@@ -799,24 +813,31 @@ coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
 .pull-right[
 
 ```r
-coef(lm(ACT ~ SATQ_c*SATV_c, sat.act))     # d
+coef(lm(reasoning ~ binding*updating, ds_vb_18))
 ```
 
 ```
-##   (Intercept)        SATQ_c        SATV_c SATQ_c:SATV_c 
-##     2.832e+01     1.701e-02     1.432e-02     2.780e-05
+##      (Intercept)          binding 
+##          0.34385          0.04942 
+##         updating binding:updating 
+##          0.51703         -0.04416
 ```
 
 ```r
-coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
+coef(lm(reasoning ~ 0+binding*updating, ds_vb_18))
 ```
 
 ```
-##        SATQ_c        SATV_c SATQ_c:SATV_c 
-##     0.0397598     0.0416544     0.0007596
+##          binding         updating 
+##           0.3300           1.0788 
+## binding:updating 
+##          -0.4746
 ```
 
 ]
+
+
+
 
 
 
@@ -855,21 +876,21 @@ It is important to always know of what type variables are. Use `str()` on a `dat
 
 
 ```r
-str(sat.act) ## alternatively tibble::glimpse(sat.act)
+str(ds_vb_18) ## alternatively tibble::glimpse(ds_vb_18)
 ```
 
 ```
-## 'data.frame':	687 obs. of  10 variables:
-##  $ gender   : Factor w/ 2 levels "male","female": 2 2 2 1 1 1 2 1 2 2 ...
-##  $ education: Factor w/ 6 levels "0","1","2","3",..: 4 4 4 5 3 6 6 4 5 6 ...
-##  $ age      : int  19 23 20 27 33 26 30 19 23 40 ...
-##  $ ACT      : int  24 35 21 26 31 28 36 22 22 35 ...
-##  $ SATV     : int  500 600 480 550 600 640 610 520 400 730 ...
-##  $ SATQ     : int  500 500 470 520 550 640 500 560 600 800 ...
-##  $ SATQ_c   : num  -110.2 -110.2 -140.2 -90.2 -60.2 ...
-##  $ SATV_c   : num  -112.3 -12.3 -132.3 -62.3 -12.3 ...
-##  $ resid_q  : num  -36.3 -102.1 -53.2 -49.2 -52.1 ...
-##  $ resid_v  : num  -42.76 57.24 -43.82 -5.39 25.68 ...
+## Classes 'tbl_df', 'tbl' and 'data.frame':	197 obs. of  10 variables:
+##  $ code      : Factor w/ 197 levels "2","3","4","5",..: 1 2 3 4 5 6 7 8 9 10 ...
+##  $ order     : Factor w/ 2 levels "A","B": 2 2 1 2 2 2 2 1 2 1 ...
+##  $ training  : Factor w/ 3 levels "control","updating",..: 1 1 2 3 3 3 3 2 2 1 ...
+##  $ updating  : num  0.752 0.581 0.702 0.647 0.232 ...
+##  $ binding   : num  0.785 1.955 1.463 1.915 0.545 ...
+##  $ reasoning : num  0.775 0.691 0.689 0.752 0.482 ...
+##  $ binding_c : num  -0.494 0.676 0.184 0.636 -0.734 ...
+##  $ updating_c: num  0.17589 0.00531 0.1262 0.07172 -0.34365 ...
+##  $ resid_b   : num  -0.9166 0.6634 -0.1189 0.4638 0.0914 ...
+##  $ resid_u   : num  0.2634 -0.1145 0.0936 -0.041 -0.2136 ...
 ```
 
 - Numerical covariates are `int` or `num`.
@@ -880,35 +901,35 @@ str(sat.act) ## alternatively tibble::glimpse(sat.act)
 ---
 class: small
 
-# Models with Categorical Covariates
+## Models with Categorical Covariates
 
-We might be interested in testing whether ACT differs between men and women. 
+We might be interested in testing whether reasoning performance differs between both orders in which tasks were presented. 
 .pull-left2[
 
 ```r
-m3 &lt;- lm(ACT ~ gender, sat.act)
+m3 &lt;- lm(reasoning ~ order, ds_vb_18)
 summary(m3)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ gender, data = sat.act)
+## lm(formula = reasoning ~ order, data = ds_vb_18)
 ## 
 ## Residuals:
-##    Min     1Q Median     3Q    Max 
-##  -25.8   -3.4    0.6    3.6    7.6 
+##     Min      1Q  Median      3Q     Max 
+## -0.5223 -0.0901  0.0230  0.0986  0.2622 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)    28.820      0.309   93.39   &lt;2e-16 ***
-## genderfemale   -0.420      0.385   -1.09     0.28    
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  0.66992    0.01361   49.22   &lt;2e-16 ***
+## orderB      -0.00149    0.01883   -0.08     0.94    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 4.83 on 685 degrees of freedom
-## Multiple R-squared:  0.00174,	Adjusted R-squared:  0.000279 
-## F-statistic: 1.19 on 1 and 685 DF,  p-value: 0.275
+## Residual standard error: 0.132 on 195 degrees of freedom
+## Multiple R-squared:  3.22e-05,	Adjusted R-squared:  -0.0051 
+## F-statistic: 0.00628 on 1 and 195 DF,  p-value: 0.937
 ```
 
 ]
@@ -919,35 +940,35 @@ summary(m3)
 .pull-right2[
 
 ```r
-mean(sat.act$ACT)
+mean(ds_vb_18$reasoning)
 ```
 
 ```
-## [1] 28.55
+## [1] 0.6691
 ```
 
 ```r
-sat.act %&gt;% group_by(gender) %&gt;%
-  summarise(m = mean(ACT))
+ds_vb_18 %&gt;% group_by(order) %&gt;%
+  summarise(m = mean(reasoning))
 ```
 
 ```
 ## # A tibble: 2 x 2
-##   gender     m
+##   order      m
 ##   &lt;fct&gt;  &lt;dbl&gt;
-## 1 male    28.8
-## 2 female  28.4
+## 1 A     0.6699
+## 2 B     0.6684
 ```
 
 
 ```r
-sat.act %&gt;% group_by(gender) %&gt;%
-  summarise(m = mean(ACT)) %&gt;%
-  {.$m[2] - .$m[1]}
+ds_vb_18 %&gt;% group_by(order) %&gt;%
+ summarise(m=mean(reasoning)) %&gt;%
+ {.$m[2] - .$m[1]}
 ```
 
 ```
-## [1] -0.42
+## [1] -0.001492
 ```
 ]
 
@@ -963,20 +984,20 @@ class: small
 .pull-left[
 
 ```r
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 
 ```
-##   (Intercept) genderfemale
-## 1           1            1
-## 2           1            1
-## 3           1            1
-## 4           1            0
-## 5           1            0
+##   (Intercept) orderB
+## 1           1      1
+## 2           1      1
+## 3           1      0
+## 4           1      1
+## 5           1      1
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
-## attr(,"contrasts")$gender
+## attr(,"contrasts")$order
 ## [1] "contr.treatment"
 ```
 ]
@@ -991,35 +1012,28 @@ class: small
 .pull-left[
 
 ```r
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 
 ```
-##   (Intercept) genderfemale
-## 1           1            1
-## 2           1            1
-## 3           1            1
-## 4           1            0
-## 5           1            0
+##   (Intercept) orderB
+## 1           1      1
+## 2           1      1
+## 3           1      0
+## 4           1      1
+## 5           1      1
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
-## attr(,"contrasts")$gender
+## attr(,"contrasts")$order
 ## [1] "contr.treatment"
 ```
+
+
 
 
 ```r
 afex::set_sum_contrasts()
-```
-
-```
-## Registered S3 methods overwritten by 'lme4':
-##   method                          from
-##   cooks.distance.influence.merMod car 
-##   influence.merMod                car 
-##   dfbeta.influence.merMod         car 
-##   dfbetas.influence.merMod        car
 ```
 
 ```
@@ -1031,20 +1045,20 @@ afex::set_sum_contrasts()
 .pull-right[
 
 ```r
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 
 ```
-##   (Intercept) gender1
-## 1           1      -1
-## 2           1      -1
-## 3           1      -1
-## 4           1       1
-## 5           1       1
+##   (Intercept) order1
+## 1           1     -1
+## 2           1     -1
+## 3           1      1
+## 4           1     -1
+## 5           1     -1
 ## attr(,"assign")
 ## [1] 0 1
 ## attr(,"contrasts")
-## attr(,"contrasts")$gender
+## attr(,"contrasts")$order
 ## [1] "contr.sum"
 ```
 ]
@@ -1052,36 +1066,36 @@ model.matrix(ACT ~ gender, sat.act[1:5,])
 ---
 class: small
 
-# Models with Categorical Covariates II 
+## Models with Categorical Covariates II 
 
 Same model as before, but with sum/effects contrasts.
 
 .pull-left2[
 
 ```r
-m4 &lt;- lm(ACT ~ gender, sat.act)
+m4 &lt;- lm(reasoning ~ order, ds_vb_18)
 summary(m4)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ gender, data = sat.act)
+## lm(formula = reasoning ~ order, data = ds_vb_18)
 ## 
 ## Residuals:
-##    Min     1Q Median     3Q    Max 
-##  -25.8   -3.4    0.6    3.6    7.6 
+##     Min      1Q  Median      3Q     Max 
+## -0.5223 -0.0901  0.0230  0.0986  0.2622 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)   28.610      0.192  148.73   &lt;2e-16 ***
-## gender1        0.210      0.192    1.09     0.28    
+## (Intercept) 0.669175   0.009413   71.09   &lt;2e-16 ***
+## order1      0.000746   0.009413    0.08     0.94    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 4.83 on 685 degrees of freedom
-## Multiple R-squared:  0.00174,	Adjusted R-squared:  0.000279 
-## F-statistic: 1.19 on 1 and 685 DF,  p-value: 0.275
+## Residual standard error: 0.132 on 195 degrees of freedom
+## Multiple R-squared:  3.22e-05,	Adjusted R-squared:  -0.0051 
+## F-statistic: 0.00628 on 1 and 195 DF,  p-value: 0.937
 ```
 
 ]
@@ -1091,37 +1105,37 @@ summary(m4)
 .pull-right2[
 
 ```r
-mean(sat.act$ACT)
+mean(ds_vb_18$reasoning)
 ```
 
 ```
-## [1] 28.55
+## [1] 0.6691
 ```
 
 ```r
-sat.act %&gt;% group_by(gender) %&gt;%
-  summarise(m = mean(ACT))
+ds_vb_18 %&gt;% group_by(order) %&gt;%
+  summarise(m = mean(reasoning))
 ```
 
 ```
 ## # A tibble: 2 x 2
-##   gender     m
+##   order      m
 ##   &lt;fct&gt;  &lt;dbl&gt;
-## 1 male    28.8
-## 2 female  28.4
+## 1 A     0.6699
+## 2 B     0.6684
 ```
 
 ```r
-sat.act %&gt;% group_by(gender) %&gt;%
-  summarise(m = mean(ACT)) %&gt;% 
-  summarise(mean(m))
+ds_vb_18 %&gt;% group_by(order) %&gt;%
+ summarise(m=mean(reasoning)) %&gt;% 
+ summarise(mean(m))
 ```
 
 ```
 ## # A tibble: 1 x 1
 ##   `mean(m)`
 ##       &lt;dbl&gt;
-## 1      28.6
+## 1    0.6692
 ```
 
 ]
@@ -1147,23 +1161,17 @@ afex::set_default_contrasts() # or set_treatment_contrasts()
 .pull-left2[
 
 ```r
-m5 &lt;- lm(ACT ~ gender*education, sat.act)
+m5 &lt;- lm(reasoning ~ order*training, ds_vb_18)
 coef(m5)
 ```
 
 ```
-##             (Intercept)            genderfemale 
-##                29.03704                -2.96807 
-##              education1              education2 
-##                -2.45809                -2.38486 
-##              education3              education4 
-##                -0.36615                -0.09586 
-##              education5 genderfemale:education1 
-##                 1.78905                 4.22246 
-## genderfemale:education2 genderfemale:education3 
-##                 3.51590                 2.46034 
-## genderfemale:education4 genderfemale:education5 
-##                 3.39899                 1.26026
+##             (Intercept)                  orderB 
+##                0.658263                0.031830 
+##        trainingupdating         trainingbinding 
+##                0.042523               -0.002962 
+## orderB:trainingupdating  orderB:trainingbinding 
+##               -0.067247               -0.040123
 ```
 
 ]
@@ -1171,28 +1179,22 @@ coef(m5)
 .pull-right2[
 
 ```r
-sat.act %&gt;% 
-  group_by(gender,education) %&gt;%
-  summarise(mean(ACT))
+ds_vb_18 %&gt;% 
+  group_by(order,training) %&gt;%
+  summarise(mean(reasoning))
 ```
 
 ```
-## # A tibble: 12 x 3
-## # Groups:   gender [2]
-##    gender education `mean(ACT)`
-##    &lt;fct&gt;  &lt;fct&gt;           &lt;dbl&gt;
-##  1 male   0                29.0
-##  2 male   1                26.6
-##  3 male   2                26.7
-##  4 male   3                28.7
-##  5 male   4                28.9
-##  6 male   5                30.8
-##  7 female 0                26.1
-##  8 female 1                27.8
-##  9 female 2                27.2
-## 10 female 3                28.2
-## 11 female 4                29.4
-## 12 female 5                29.1
+## # A tibble: 6 x 3
+## # Groups:   order [2]
+##   order training `mean(reasoning)`
+##   &lt;fct&gt; &lt;fct&gt;                &lt;dbl&gt;
+## 1 A     control             0.6583
+## 2 A     updating            0.7008
+## 3 A     binding             0.6553
+## 4 B     control             0.6901
+## 5 B     updating            0.6654
+## 6 B     binding             0.6470
 ```
 ]
 
@@ -1217,19 +1219,15 @@ afex::set_sum_contrasts() # or set_effects_contrasts() or set_deviation_contrast
 .pull-left2[
 
 ```r
-m6 &lt;- lm(ACT ~ gender*education, sat.act)
+m6 &lt;- lm(reasoning ~ order*training, ds_vb_18)
 coef(m6)
 ```
 
 ```
-##        (Intercept)            gender1         education1 
-##          28.205178           0.245873          -0.652177 
-##         education2         education3         education4 
-##          -0.999038          -1.279091           0.211844 
-##         education5 gender1:education1 gender1:education2 
-##           0.951457           1.238163          -0.873066 
-## gender1:education3 gender1:education4 gender1:education5 
-##          -0.519786           0.007991          -0.461331
+##      (Intercept)           order1        training1        training2 
+##         0.669470         0.001980         0.004708         0.013608 
+## order1:training1 order1:training2 
+##        -0.017895         0.015729
 ```
 
 ]
@@ -1237,18 +1235,18 @@ coef(m6)
 .pull-right2[
 
 ```r
-sat.act %&gt;% 
-  group_by(gender,education) %&gt;%
-  summarise(m = mean(ACT)) %&gt;% 
-  ungroup() %&gt;% 
-  summarise(mean(m))
+ds_vb_18 %&gt;% 
+ group_by(order,training) %&gt;%
+ summarise(m=mean(reasoning)) %&gt;% 
+ ungroup() %&gt;% 
+ summarise(mean(m))
 ```
 
 ```
 ## # A tibble: 1 x 1
 ##   `mean(m)`
 ##       &lt;dbl&gt;
-## 1      28.2
+## 1    0.6695
 ```
 ]
 
@@ -1260,14 +1258,21 @@ sat.act %&gt;%
 .pull-left3[
 
 ```r
-lm(ACT ~ SATQ + SATV, sat.act)   # a: 3
-lm(ACT ~ SATQ : SATV, sat.act)   # b: 2
-lm(ACT ~ 0 + SATQ:SATV, sat.act) # c: 1
-lm(ACT ~ SATQ*SATV, sat.act)     # d: 4
-lm(ACT ~ 0+SATQ*SATV, sat.act)   # e: 3
+lm(reasoning ~ binding + updating, 
+   ds_vb_18)   # a: 3
+lm(reasoning ~ binding : updating, 
+   ds_vb_18)   # b: 2
+lm(reasoning ~ 0 + binding:updating, 
+   ds_vb_18)   # c: 1
+lm(reasoning ~ binding*updating, 
+   ds_vb_18)   # d: 4
+lm(reasoning ~ 0+binding*updating, 
+   ds_vb_18)   # e: 3
 
-lm(ACT ~ SATQ, sat.act)          # f: 2
-lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
+lm(reasoning ~ binding, 
+   ds_vb_18)   # f: 2
+lm(reasoning ~ 0 + binding, 
+   ds_vb_18)   # g: 1
 ```
 
 ]
@@ -1276,32 +1281,32 @@ lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
 .pull-right3[
 
 ```r
-lm(ACT ~ gender, sat.act)                  # a
-lm(ACT ~ 0+gender, sat.act)                # b
-lm(ACT ~ gender+education, sat.act)        # c
-lm(ACT ~ 0+gender+education, sat.act)      # d
-lm(ACT ~ gender:education, sat.act)        # e
-lm(ACT ~ 0+gender:education, sat.act)      # f
-lm(ACT ~ gender*education, sat.act)        # g
-lm(ACT ~ 0+gender*education, sat.act)      # h
-lm(ACT ~ gender+gender:education, sat.act) # i
+lm(reasoning ~ order, ds_vb_18)               # a
+lm(reasoning ~ 0+order, ds_vb_18)             # b
+lm(reasoning ~ order+training, ds_vb_18)      # c
+lm(reasoning ~ 0+order+training, ds_vb_18)    # d
+lm(reasoning ~ order:training, ds_vb_18)      # e
+lm(reasoning ~ 0+order:training, ds_vb_18)    # f
+lm(reasoning ~ order*training, ds_vb_18)      # g
+lm(reasoning ~ 0+order*training, ds_vb_18)    # h
+lm(reasoning ~ order+order:training, ds_vb_18)# i
 ```
 
 
 ```r
-levels(sat.act$gender)
+levels(ds_vb_18$order)
 ```
 
 ```
-## [1] "male"   "female"
+## [1] "A" "B"
 ```
 
 ```r
-levels(sat.act$education)
+levels(ds_vb_18$training)
 ```
 
 ```
-## [1] "0" "1" "2" "3" "4" "5"
+## [1] "control"  "updating" "binding"
 ```
 
 
@@ -1316,39 +1321,39 @@ class: small
 
 
 ```r
-coef(lm(ACT ~ gender, sat.act))                  # a: 2
+coef(lm(reasoning ~ order, ds_vb_18))                 # a: 2
 ```
 
 ```
-## (Intercept)     gender1 
-##       28.61        0.21
-```
-
-```r
-coef(lm(ACT ~ 0+gender, sat.act))                # b: 2
-```
-
-```
-##   gendermale genderfemale 
-##        28.82        28.40
+## (Intercept)      order1 
+##    0.669175    0.000746
 ```
 
 ```r
-coef(lm(ACT ~ gender+education, sat.act))        # c: 7
+coef(lm(reasoning ~ 0+order, ds_vb_18))               # b: 2
 ```
 
 ```
-## (Intercept)     gender1  education1  education2  education3  education4  education5 
-##     28.2016      0.2906     -0.6912     -0.8888     -1.3149      0.2306      1.0843
+## orderA orderB 
+## 0.6699 0.6684
 ```
 
 ```r
-coef(lm(ACT ~ 0+gender+education, sat.act))      # d: 7
+coef(lm(reasoning ~ order+training, ds_vb_18))        # c: 4
 ```
 
 ```
-##   gendermale genderfemale   education1   education2   education3   education4   education5 
-##      28.4922      27.9110      -0.6912      -0.8888      -1.3149       0.2306       1.0843
+## (Intercept)      order1   training1   training2 
+##   0.6694630   0.0008813   0.0056482   0.0127591
+```
+
+```r
+coef(lm(reasoning ~ 0+order+training, ds_vb_18))      # d: 4
+```
+
+```
+##    orderA    orderB training1 training2 
+##  0.670344  0.668582  0.005648  0.012759
 ```
 
 ---
@@ -1357,38 +1362,32 @@ class: small
 
 
 ```r
-coef(lm(ACT ~ gender:education, sat.act))        # e: 13
+coef(lm(reasoning ~ order:training, ds_vb_18))        # e: 7
 ```
 
 ```
-##             (Intercept)   gendermale:education0 genderfemale:education0   gendermale:education1 
-##                29.11828                -0.08124                -3.04931                -2.53933 
-## genderfemale:education1   gendermale:education2 genderfemale:education2   gendermale:education3 
-##                -1.28495                -2.46611                -1.91828                -0.44739 
-## genderfemale:education3   gendermale:education4 genderfemale:education4   gendermale:education5 
-##                -0.95512                -0.17710                 0.25381                 1.70781 
-## genderfemale:education5 
-##                      NA
+##             (Intercept)  orderA:trainingcontrol  orderB:trainingcontrol orderA:trainingupdating 
+##                0.647008                0.011255                0.043085                0.053779 
+## orderB:trainingupdating  orderA:trainingbinding  orderB:trainingbinding 
+##                0.018361                0.008293                      NA
 ```
 
 ```r
-coef(lm(ACT ~ 0+gender:education, sat.act))      # f: 12
+coef(lm(reasoning ~ 0+order:training, ds_vb_18))      # f: 6
 ```
 
 ```
-##   gendermale:education0 genderfemale:education0   gendermale:education1 genderfemale:education1 
-##                   29.04                   26.07                   26.58                   27.83 
-##   gendermale:education2 genderfemale:education2   gendermale:education3 genderfemale:education3 
-##                   26.65                   27.20                   28.67                   28.16 
-##   gendermale:education4 genderfemale:education4   gendermale:education5 genderfemale:education5 
-##                   28.94                   29.37                   30.83                   29.12
+##  orderA:trainingcontrol  orderB:trainingcontrol orderA:trainingupdating orderB:trainingupdating 
+##                  0.6583                  0.6901                  0.7008                  0.6654 
+##  orderA:trainingbinding  orderB:trainingbinding 
+##                  0.6553                  0.6470
 ```
 
 
 ```r
-coef(lm(ACT ~ gender*education, sat.act))        # g: 12
-coef(lm(ACT ~ 0+gender*education, sat.act))      # h: 12
-coef(lm(ACT ~ gender+gender:education, sat.act)) # i: 12
+coef(lm(reasoning ~ order*training, ds_vb_18))        # g: 6
+coef(lm(reasoning ~ 0+order*training, ds_vb_18))      # h: 6
+coef(lm(reasoning ~ order+order:training, ds_vb_18))  # i: 6
 ```
 
 
@@ -1427,39 +1426,33 @@ class: small
 
 ```r
 afex::set_sum_contrasts()
-m6 &lt;- lm(ACT ~ gender*education, sat.act)
+m6 &lt;- lm(reasoning ~ order*training, ds_vb_18)
 summary(m6)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = ACT ~ gender * education, data = sat.act)
+## lm(formula = reasoning ~ order * training, data = ds_vb_18)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -23.652  -3.118   0.329   3.837   9.931 
+## -0.5077 -0.0868  0.0093  0.0932  0.2739 
 ## 
 ## Coefficients:
-##                    Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)        28.20518    0.23133  121.93   &lt;2e-16 ***
-## gender1             0.24587    0.23133    1.06    0.288    
-## education1         -0.65218    0.56826   -1.15    0.252    
-## education2         -0.99904    0.63931   -1.56    0.119    
-## education3         -1.27909    0.63689   -2.01    0.045 *  
-## education4          0.21184    0.34788    0.61    0.543    
-## education5          0.95146    0.41373    2.30    0.022 *  
-## gender1:education1  1.23816    0.56826    2.18    0.030 *  
-## gender1:education2 -0.87307    0.63931   -1.37    0.173    
-## gender1:education3 -0.51979    0.63689   -0.82    0.415    
-## gender1:education4  0.00799    0.34788    0.02    0.982    
-## gender1:education5 -0.46133    0.41373   -1.12    0.265    
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)       0.66947    0.00944   70.91   &lt;2e-16 ***
+## order1            0.00198    0.00944    0.21     0.83    
+## training1         0.00471    0.01304    0.36     0.72    
+## training2         0.01361    0.01370    0.99     0.32    
+## order1:training1 -0.01790    0.01304   -1.37     0.17    
+## order1:training2  0.01573    0.01370    1.15     0.25    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 4.75 on 675 degrees of freedom
-## Multiple R-squared:  0.0471,	Adjusted R-squared:  0.0316 
-## F-statistic: 3.03 on 11 and 675 DF,  p-value: 0.00057
+## Residual standard error: 0.132 on 191 degrees of freedom
+## Multiple R-squared:  0.0212,	Adjusted R-squared:  -0.00443 
+## F-statistic: 0.827 on 5 and 191 DF,  p-value: 0.532
 ```
 
 ]
@@ -1467,18 +1460,18 @@ summary(m6)
 .pull-right2[
 
 ```r
-sat.act %&gt;% 
-  group_by(gender, education) %&gt;%
-  summarise(m = mean(ACT)) %&gt;% 
-  ungroup() %&gt;% 
-  summarise(mean(m))
+ds_vb_18 %&gt;% 
+ group_by(order, training) %&gt;%
+ summarise(m=mean(reasoning)) %&gt;% 
+ ungroup() %&gt;% 
+ summarise(mean(m))
 ```
 
 ```
 ## # A tibble: 1 x 1
 ##   `mean(m)`
 ##       &lt;dbl&gt;
-## 1      28.2
+## 1    0.6695
 ```
 ]
 
@@ -1497,13 +1490,13 @@ Anova(m6, type = 3)
 ```
 ## Anova Table (Type III tests)
 ## 
-## Response: ACT
-##                  Sum Sq  Df  F value  Pr(&gt;F)    
-## (Intercept)      335997   1 14866.33 &lt; 2e-16 ***
-## gender               26   1     1.13 0.28822    
-## education           542   5     4.80 0.00026 ***
-## gender:education    201   5     1.78 0.11466    
-## Residuals         15256 675                     
+## Response: reasoning
+##                Sum Sq  Df F value Pr(&gt;F)    
+## (Intercept)      87.5   1 5028.12 &lt;2e-16 ***
+## order             0.0   1    0.04   0.83    
+## training          0.0   2    0.99   0.37    
+## order:training    0.0   2    1.08   0.34    
+## Residuals         3.3 191                   
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -1513,7 +1506,7 @@ Anova(m6, type = 3)
 - Type III tests require orthogonal contrasts (e.g.,`contr.sum`); recommended:
   - For experimental designs in which imbalance is completely random and not structural,
   - Complete cross-over interactions (i.e., main effects in presence of interaction) possible.
-- Type II are more appropriate if imbalance is structural (i.e., observational data; maybe here).
+- Type II are more appropriate if imbalance is structural (i.e., observational data).
 
 ---
 class: small, inline-grey
@@ -1524,22 +1517,19 @@ class: small, inline-grey
 
 ```r
 library("emmeans")    
-(emms &lt;- emmeans(m6, ~education))
+(emms &lt;- emmeans(m6, "training"))
 ```
 
 ```
-##  education emmean    SE  df lower.CL upper.CL
-##  0           27.6 0.636 675     26.3     28.8
-##  1           27.2 0.730 675     25.8     28.6
-##  2           26.9 0.727 675     25.5     28.4
-##  3           28.4 0.318 675     27.8     29.0
-##  4           29.2 0.420 675     28.3     30.0
-##  5           30.0 0.428 675     29.1     30.8
+##  training emmean     SE  df lower.CL upper.CL
+##  control   0.674 0.0156 191    0.643    0.705
+##  updating  0.683 0.0172 191    0.649    0.717
+##  binding   0.651 0.0162 191    0.619    0.683
 ## 
-## Results are averaged over the levels of: gender 
+## Results are averaged over the levels of: order 
 ## Confidence level used: 0.95
 ```
-`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, c("training", "order"))`).
 
 One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 
@@ -1552,25 +1542,13 @@ pairs(emms, adjust='holm')
 ```
 
 ```
-##  contrast estimate    SE  df t.ratio p.value
-##  0 - 1       0.347 0.968 675  0.358  1.0000 
-##  0 - 2       0.627 0.966 675  0.649  1.0000 
-##  0 - 3      -0.864 0.711 675 -1.215  0.9658 
-##  0 - 4      -1.604 0.762 675 -2.105  0.3213 
-##  0 - 5      -2.419 0.767 675 -3.156  0.0217 
-##  1 - 2       0.280 1.030 675  0.272  1.0000 
-##  1 - 3      -1.211 0.796 675 -1.521  0.9017 
-##  1 - 4      -1.950 0.842 675 -2.316  0.2086 
-##  1 - 5      -2.766 0.846 675 -3.268  0.0159 
-##  2 - 3      -1.491 0.793 675 -1.879  0.4851 
-##  2 - 4      -2.231 0.839 675 -2.657  0.0887 
-##  2 - 5      -3.046 0.844 675 -3.611  0.0049 
-##  3 - 4      -0.740 0.527 675 -1.403  0.9658 
-##  3 - 5      -1.555 0.534 675 -2.914  0.0443 
-##  4 - 5      -0.816 0.600 675 -1.359  0.9658 
+##  contrast           estimate     SE  df t.ratio p.value
+##  control - updating  -0.0089 0.0232 191 -0.384  0.7017 
+##  control - binding    0.0230 0.0225 191  1.023  0.6152 
+##  updating - binding   0.0319 0.0237 191  1.349  0.5365 
 ## 
-## Results are averaged over the levels of: gender 
-## P value adjustment: holm method for 15 tests
+## Results are averaged over the levels of: order 
+## P value adjustment: holm method for 3 tests
 ```
 ]
 
@@ -1583,22 +1561,19 @@ class: small, inline-grey
 
 ```r
 library("emmeans")  
-(emms &lt;- emmeans(m6, "education")) 
+(emms &lt;- emmeans(m6, "training")) 
 ```
 
 ```
-##  education emmean    SE  df lower.CL upper.CL
-##  0           27.6 0.636 675     26.3     28.8
-##  1           27.2 0.730 675     25.8     28.6
-##  2           26.9 0.727 675     25.5     28.4
-##  3           28.4 0.318 675     27.8     29.0
-##  4           29.2 0.420 675     28.3     30.0
-##  5           30.0 0.428 675     29.1     30.8
+##  training emmean     SE  df lower.CL upper.CL
+##  control   0.674 0.0156 191    0.643    0.705
+##  updating  0.683 0.0172 191    0.649    0.717
+##  binding   0.651 0.0162 191    0.619    0.683
 ## 
-## Results are averaged over the levels of: gender 
+## Results are averaged over the levels of: order 
 ## Confidence level used: 0.95
 ```
-`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, c("training", "order"))`).
 
 One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 
@@ -1608,20 +1583,20 @@ One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 
 ```r
 cs &lt;- list(
-  "12-45" = c(0, -0.5, -0.5, 0, 0.5, 0.5),
-  "0-3" = c(-1, 0, 0, 1, 0, 0),
-  "all-last" = c(-rep(0.2, 5), 1)
+  "c-u" = c(1, -1, 0),
+  "c-wm" = c(1, -0.5, -0.5),
+  "c-uub" = c(1, -0.75, -0.25)
 )
 contrast(emms, cs, adjust = "holm")
 ```
 
 ```
-##  contrast estimate    SE  df t.ratio p.value
-##  12-45       2.498 0.596 675 4.191   0.0001 
-##  0-3         0.864 0.711 675 1.215   0.2246 
-##  all-last    2.120 0.503 675 4.213   0.0001 
+##  contrast  estimate     SE  df t.ratio p.value
+##  c-u      -0.008900 0.0232 191 -0.384  1.0000 
+##  c-wm      0.007062 0.0196 191  0.361  1.0000 
+##  c-uub    -0.000919 0.0206 191 -0.045  1.0000 
 ## 
-## Results are averaged over the levels of: gender 
+## Results are averaged over the levels of: order 
 ## P value adjustment: holm method for 3 tests
 ```
 ]
@@ -1658,16 +1633,16 @@ class: small
 
 ```r
 library("afex")
-sat.act$id &lt;- factor(1:nrow(sat.act))
-(a1 &lt;- aov_car(ACT ~ gender+Error(id), sat.act))
+(a1 &lt;- aov_car(reasoning ~ order + Error(code), 
+               ds_vb_18))
 ```
 
 ```
 # Anova Table (Type 3 tests)
 # 
-# Response: ACT
-#   Effect     df   MSE    F  ges p.value
-# 1 gender 1, 685 23.33 1.19 .002     .28
+# Response: reasoning
+#   Effect     df  MSE    F    ges p.value
+# 1  order 1, 195 0.02 0.01 &lt;.0001     .94
 # ---
 # Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
@@ -1677,18 +1652,18 @@ sat.act$id &lt;- factor(1:nrow(sat.act))
 .pull-right[
 
 ```r
-(a2 &lt;- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 &lt;- aov_car(reasoning ~ order*training + 
+                 Error(code), ds_vb_18))
 ```
 
 ```
 ## Anova Table (Type 3 tests)
 ## 
-## Response: ACT
-##             Effect     df   MSE        F  ges p.value
-## 1           gender 1, 675 22.60     1.13 .002     .29
-## 2        education 5, 675 22.60 4.80 ***  .03   .0003
-## 3 gender:education 5, 675 22.60     1.78  .01     .11
+## Response: reasoning
+##           Effect     df  MSE    F   ges p.value
+## 1          order 1, 191 0.02 0.04 .0002     .83
+## 2       training 2, 191 0.02 0.99   .01     .37
+## 3 order:training 2, 191 0.02 1.08   .01     .34
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
@@ -1701,18 +1676,18 @@ sat.act$id &lt;- factor(1:nrow(sat.act))
 .pull-left[
 
 ```r
-(a2 &lt;- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 &lt;- aov_car(reasoning ~ order*training +
+                 Error(code), ds_vb_18))
 ```
 
 ```
 ## Anova Table (Type 3 tests)
 ## 
-## Response: ACT
-##             Effect     df   MSE        F  ges p.value
-## 1           gender 1, 675 22.60     1.13 .002     .29
-## 2        education 5, 675 22.60 4.80 ***  .03   .0003
-## 3 gender:education 5, 675 22.60     1.78  .01     .11
+## Response: reasoning
+##           Effect     df  MSE    F   ges p.value
+## 1          order 1, 191 0.02 0.04 .0002     .83
+## 2       training 2, 191 0.02 0.99   .01     .37
+## 3 order:training 2, 191 0.02 1.08   .01     .34
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ```
@@ -1724,13 +1699,13 @@ https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html
 .pull-right[
 
 ```r
-afex_plot(a2, "education", "gender",
+afex_plot(a2, "training", "order",
           data_geom = geom_violin, 
           data_arg = list(width = 0.4)) +
   theme(legend.position = "bottom")
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-78-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-81-1.svg)&lt;!-- --&gt;
 ]
 
 ---
@@ -1742,7 +1717,7 @@ afex_plot(a2, "education", "gender",
 .pull-left[
 
 ```r
-emmeans(a2, "gender")
+emmeans(a2, "order")
 ```
 
 ```
@@ -1750,11 +1725,11 @@ emmeans(a2, "gender")
 ```
 
 ```
-##  gender emmean    SE  df lower.CL upper.CL
-##  male     28.5 0.343 675     27.8     29.1
-##  female   28.0 0.311 675     27.3     28.6
+##  order emmean     SE  df lower.CL upper.CL
+##  A      0.671 0.0137 191    0.644    0.698
+##  B      0.667 0.0130 191    0.642    0.693
 ## 
-## Results are averaged over the levels of: education 
+## Results are averaged over the levels of: training 
 ## Confidence level used: 0.95
 ```
 
@@ -1763,7 +1738,7 @@ emmeans(a2, "gender")
 .pull-right[
 
 ```r
-emmeans(a2, c("education")) %&gt;% pairs
+emmeans(a2, c("training")) %&gt;% pairs
 ```
 
 ```
@@ -1771,25 +1746,13 @@ emmeans(a2, c("education")) %&gt;% pairs
 ```
 
 ```
-##  contrast estimate    SE  df t.ratio p.value
-##  0 - 1       0.347 0.968 675  0.358  0.9992 
-##  0 - 2       0.627 0.966 675  0.649  0.9871 
-##  0 - 3      -0.864 0.711 675 -1.215  0.8294 
-##  0 - 4      -1.604 0.762 675 -2.105  0.2861 
-##  0 - 5      -2.419 0.767 675 -3.156  0.0207 
-##  1 - 2       0.280 1.030 675  0.272  0.9998 
-##  1 - 3      -1.211 0.796 675 -1.521  0.6510 
-##  1 - 4      -1.950 0.842 675 -2.316  0.1890 
-##  1 - 5      -2.766 0.846 675 -3.268  0.0144 
-##  2 - 3      -1.491 0.793 675 -1.879  0.4159 
-##  2 - 4      -2.231 0.839 675 -2.657  0.0854 
-##  2 - 5      -3.046 0.844 675 -3.611  0.0044 
-##  3 - 4      -0.740 0.527 675 -1.403  0.7250 
-##  3 - 5      -1.555 0.534 675 -2.914  0.0427 
-##  4 - 5      -0.816 0.600 675 -1.359  0.7515 
+##  contrast           estimate     SE  df t.ratio p.value
+##  control - updating  -0.0089 0.0232 191 -0.384  0.9221 
+##  control - binding    0.0230 0.0225 191  1.023  0.5632 
+##  updating - binding   0.0319 0.0237 191  1.349  0.3698 
 ## 
-## Results are averaged over the levels of: gender 
-## P value adjustment: tukey method for comparing a family of 6 estimates
+## Results are averaged over the levels of: order 
+## P value adjustment: tukey method for comparing a family of 3 estimates
 ```
 
 ]
@@ -1927,11 +1890,11 @@ Machines %&gt;% group_by(Machine) %&gt;%
 
 ```
 ## # A tibble: 3 x 3
-##   Machine     m    se
-##   &lt;fct&gt;   &lt;dbl&gt; &lt;dbl&gt;
-## 1 A        52.4 0.940
-## 2 B        60.3 1.92 
-## 3 C        66.3 0.989
+##   Machine     m     se
+##   &lt;fct&gt;   &lt;dbl&gt;  &lt;dbl&gt;
+## 1 A       52.36 0.9395
+## 2 B       60.32 1.924 
+## 3 C       66.27 0.9886
 ```
 
 
@@ -1947,7 +1910,7 @@ ggplot(Machines, aes(x = Machine, y = score)) +
   theme_light()
 ```
 
-![](statistical_modeling_files/figure-html/unnamed-chunk-84-1.svg)&lt;!-- --&gt;
+![](statistical_modeling_files/figure-html/unnamed-chunk-87-1.svg)&lt;!-- --&gt;
 
 ---
 
@@ -2072,17 +2035,17 @@ a1
 .pull-left[
 
 ```r
-pairs(emmeans(a1, "Machine"), 
-      adjust = "holm")
+emmeans(a1, "Machine", adjust = "holm") %&gt;% 
+  pairs
 ```
 
 ```
 ##  contrast estimate   SE df t.ratio p.value
-##  A - B       -7.97 2.18 10 -3.660  0.0088 
+##  A - B       -7.97 2.18 10 -3.660  0.0111 
 ##  A - C      -13.92 2.18 10 -6.393  0.0002 
-##  B - C       -5.95 2.18 10 -2.733  0.0211 
+##  B - C       -5.95 2.18 10 -2.733  0.0507 
 ## 
-## P value adjustment: holm method for 3 tests
+## P value adjustment: tukey method for comparing a family of 3 estimates
 ```
 ]
 
@@ -2091,17 +2054,17 @@ pairs(emmeans(a1, "Machine"),
 .pull-right[
 
 ```r
-pairs(emmeans(mmach, "Machine"), 
-      adjust = "holm")  ## complete pooling results
+emmeans(mmach, "Machine", adjust = "holm") %&gt;% 
+  pairs ## complete pooling results
 ```
 
 ```
 ##  contrast estimate   SE df t.ratio p.value
-##  A - B       -7.97 3.52 15 -2.266  0.0773 
-##  A - C      -13.92 3.52 15 -3.959  0.0038 
-##  B - C       -5.95 3.52 15 -1.693  0.1112 
+##  A - B       -7.97 3.52 15 -2.266  0.0921 
+##  A - C      -13.92 3.52 15 -3.959  0.0034 
+##  B - C       -5.95 3.52 15 -1.693  0.2402 
 ## 
-## P value adjustment: holm method for 3 tests
+## P value adjustment: tukey method for comparing a family of 3 estimates
 ```
 
 ]
@@ -2179,7 +2142,7 @@ class: center, middle, inverse
 - Cohen, J., Cohen, P., West, S. G., &amp; Aiken, L. S. (2002). *Applied Multiple Regression/Correlation Analysis for the Behavioral Sciences.* New York: Routledge Academic.
 
 ### References Example Data:
-- Revelle, William, Wilt, Joshua, and Rosenthal, Allen (2009) Personality and Cognition: The Personality-Cognition Link. In Gruszka, Alexandra and Matthews, Gerald and Szymura, Blazej (Eds.) _Handbook of Individual Differences in Cognition: Attention, Memory and Executive Control_, Springer.
+- De Simoni, C., &amp; von Bastian, C. C. (2018). Working memory updating and binding training: Bayesian evidence supporting the absence of transfer. _Journal of Experimental Psychology: General_, 147(6), 829–858. https://doi.org/10.1037/xge0000453
 - Skovgaard-Olsen, N., Singmann, H., &amp; Klauer, K. C. (2016). The relevance effect and conditionals. *Cognition*, 150, 26-36. https://doi.org/10.1016/j.cognition.2015.12.017
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>

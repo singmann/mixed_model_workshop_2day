@@ -1,22 +1,19 @@
 ---
 title: "Exercises I: Statistical Modeling in R"
 author: "Henrik Singmann"
-date: "January 2019 (updated: `r Sys.Date()`)"
+date: "July 2019 (updated: `r Sys.Date()`)"
 output: pdf_document
 ---
 
 
 ```{r setup, include=FALSE}
-require(psych)
-data(sat.act)
-sat.act$gender <- factor(sat.act$gender, 1:2, labels = c("male", "female"))
-sat.act$education <- factor(sat.act$education)
-sat.act <- na.omit(sat.act)
+load(url("http://singmann.org/download/r/ds_vb_18.rda"))
 ```
 
 # Formula Interface for Statistical Models: `~`
 
-- Allows symbolic specification of statistical model, e.g. linear models: `lm(ACT ~ SATQ, sat.act)`
+- Allows symbolic specification of statistical model, e.g. linear models:  
+    `lm(reasoning ~ binding, ds_vb_18)`
 - Everything to the left of `~` is the dependent variable.
 - Independent variables are to the right of the `~`:
 
@@ -32,28 +29,28 @@ sat.act <- na.omit(sat.act)
 # Continuous Variables: How many Parameters in each Model?
 
 ```{r, eval=FALSE}
-lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
-lm(ACT ~ SATQ_c : SATV_c, sat.act)   # b
-lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act) # c
-lm(ACT ~ SATQ_c*SATV_c, sat.act)     # d
-lm(ACT ~ 0+SATQ_c*SATV_c, sat.act)   # e
+lm(reasoning ~ binding + updating, ds_vb_18)   # a
+lm(reasoning ~ binding : updating, ds_vb_18)   # b
+lm(reasoning ~ 0 + binding:updating, ds_vb_18) # c
+lm(reasoning ~ binding*updating, ds_vb_18)     # d
+lm(reasoning ~ 0+binding*updating, ds_vb_18)   # e
 ```
 
 # Categorical Variables: How many Parameters in each Model?
 
 ```{r, eval=FALSE}
-lm(ACT ~ gender, sat.act)                  # a
-lm(ACT ~ 0+gender, sat.act)                # b
-lm(ACT ~ gender+education, sat.act)        # c
-lm(ACT ~ 0+gender+education, sat.act)      # d
-lm(ACT ~ gender:education, sat.act)        # e
-lm(ACT ~ 0+gender:education, sat.act)      # f
-lm(ACT ~ gender*education, sat.act)        # g
-lm(ACT ~ 0+gender*education, sat.act)      # h
-lm(ACT ~ gender+gender:education, sat.act) # i
+lm(reasoning ~ order, ds_vb_18)               # a
+lm(reasoning ~ 0+order, ds_vb_18)             # b
+lm(reasoning ~ order+training, ds_vb_18)      # c
+lm(reasoning ~ 0+order+training, ds_vb_18)    # d
+lm(reasoning ~ order:training, ds_vb_18)      # e
+lm(reasoning ~ 0+order:training, ds_vb_18)    # f
+lm(reasoning ~ order*training, ds_vb_18)      # g
+lm(reasoning ~ 0+order*training, ds_vb_18)    # h
+lm(reasoning ~ order+order:training, ds_vb_18)# i
 ```
 
 ```{r}
-levels(sat.act$gender) ## 2
-levels(sat.act$education) ## 6
+levels(ds_vb_18$order)    ## 2
+levels(ds_vb_18$training) ## 3
 ```
