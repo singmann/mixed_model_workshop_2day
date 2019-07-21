@@ -7,6 +7,7 @@ output:
   xaringan::moon_reader:
     css: ["default", "default-fonts", "my-theme.css"]
     lib_dir: libs
+    self_contained: false
     nature:
       highlightStyle: github
       highlightLines: true
@@ -25,6 +26,7 @@ options(htmltools.dir.version = FALSE)
 # https://github.com/gnab/remark/wiki/Markdown
 options(width=110)
 options(digits = 4)
+options(pillar.sigfig = 4)
 ```
 
 
@@ -85,34 +87,43 @@ From [Wikipedia](https://en.wikipedia.org/wiki/Statistical_model) (emphasis adde
 ---
 class: small
 
-# Some Example Data
+# Some Example Data: De Simoni & von Bastian (2018, JEP:G)
 
-Data from Revelle, Wilt and Rosenthal (2009). `?sat.act`:
-> Items were collected as part of the SAPA project (http://sapa-project.org) to develop online measures of ability (Revelle, Wilt and Rosenthal, 2009). The score means are higher than national norms suggesting both self selection for people taking on line personality and ability tests and a self reporting bias in scores.
+- Partial data from working memory training study (20 sessions over 5 weeks), post training measurement
+- 197 participants 
+    - 2 testing orders
+    - 3 training groups
+- 3 continuous variables, each is average of 4 tasks:
+    - accuracy in working memory updating task
+    - $d'$ (d-prime) working memory binding task (pair recognition)
+    - accuracy in 4 different reasoning tasks (diagramming relationships, letter sets, location sets, Raven matrices)
 
 ```{r, message=FALSE}
 library("tidyverse")
-data(sat.act, package = "psych")
-sat.act <- sat.act %>% 
-  mutate(gender = factor(gender, 1:2, labels = c("male", "female")),
-         education = factor(education)) %>% 
-  filter(!is.na(SATQ))  ## remove 13 NAs in SATQ
-summary(sat.act) # alternatively: psych::describe(sat.act)
+load("ds_vb_18.rda")  ## or: load(url("http://singmann.org/download/r/ds_vb_18.rda"))
+summary(ds_vb_18)     ## or: psych::describe(ds_vb_18)
 ```
+
+- Source: https://osf.io/fy5ku/ 
 
 ---
 class: small
 
-## Some Example Data
+![](desimoni-vonbastian-training.png)
+
+---
+class: small
+
+## Some Example Data:  De Simoni & von Bastian (2018, JEP:G)
 
 
 ```{r, fig.height=3.75, fig.width= 7, dev='svg', message=FALSE}
 theme_set(theme_bw(base_size = 17))
-sat2 <- sat.act %>% 
-  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
-ggplot(sat2, aes(x = sat_value, y = ACT)) +
-  geom_point(alpha = 0.2) +
-  facet_wrap(~ sat_type)
+wm2 <- ds_vb_18 %>% 
+  gather(key = "wm_task", value = "wm_performance", binding, updating)
+ggplot(wm2, aes(x = wm_performance, y = reasoning)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ wm_task, scales = "free_x")
 ```
 
 
@@ -124,18 +135,18 @@ class: center, middle, inverse
 
 
 ---
-# Linear Regression Model
+# Linear Regression Model: Does WM predict reasoning?
 
-- $\bf{y}$ = vector of ACT scores of length $n$ (*dependent variable*)
-- $\bf{x_{\mbox{SATQ}}}$ = vector of SATQ scores of length $n$ (*independent variable* or *covariate*)
+- $\bf{y}$ = vector of reasoning accuracies of length $n$ (*dependent variable*)
+- $\bf{x_{\mbox{WM}}}$ = vector of WM performance of length $n$ (*independent variable* or *covariate*)
 
-$$y_i = \beta_0x_{0,i}+\beta_{\mbox{SATQ}}x_{\mbox{SATQ},i}+\epsilon_i, \ \ i = 1, ..., n, \\
+$$y_i = \beta_0x_{0,i}+\beta_{\mbox{WM}}x_{\mbox{WM},i}+\epsilon_i, \ \ i = 1, ..., n, \\
 \bf{\epsilon} \sim \mathcal{N}(0, \sigma^2_{\epsilon}),$$
 where $\bf{x_0}$ is a vector of 1s of length $n$.
 
 - Errors $\bf{\epsilon}$ are assumed to come from a normal distribution (i.e., uncorrelated).
 
-- $\beta_0$ and  $\beta_{\mbox{SATQ}}$ are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( $\sigma^2_{\epsilon}$ is also a parameter). $\beta_0$ is also known as the *intercept*.
+- $\beta_0$ and  $\beta_{\mbox{WM}}$ are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( $\sigma^2_{\epsilon}$ is also a parameter). $\beta_0$ is also known as the *intercept*.
 
 ******
 
@@ -149,7 +160,7 @@ class: small
 
 .pull-left2[
 ```{r}
-m1 <- lm(ACT ~ SATQ, sat.act)
+m1 <- lm(reasoning ~ binding, ds_vb_18)
 summary(m1)
 ```
 
@@ -160,8 +171,9 @@ coef(m1)
 ```
 
 ```{r, fig.height=3, fig.width=4, dev='svg'}
-ggplot(sat.act, 
-       aes(x = SATQ, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -174,10 +186,10 @@ class: small
 
 .pull-left2[
 ```{r}
-sat.act <- sat.act %>% 
-  mutate(SATQ_c = SATQ - mean(SATQ),
-         SATV_c = SATV - mean(SATV))
-m2 <- lm(ACT ~ SATQ_c, sat.act)
+ds_vb_18 <- ds_vb_18 %>% 
+  mutate(binding_c = binding - mean(binding),
+         updating_c = updating - mean(updating))
+m2 <- lm(reasoning ~ binding_c, ds_vb_18)
 summary(m2)
 ```
 
@@ -188,8 +200,9 @@ coef(m2)
 ```
 
 ```{r, fig.height=3, fig.width=4, dev='svg'}
-ggplot(sat.act, 
-       aes(x = SATQ_c, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding_c, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -203,7 +216,7 @@ class: small
 
 .pull-left2[
 ```{r}
-m2b <- lm(ACT ~ scale(SATQ), sat.act)
+m2b <- lm(reasoning ~ scale(binding), ds_vb_18)
 summary(m2b)
 ```
 
@@ -217,9 +230,9 @@ coef(m2b)
 ```
 
 ```{r, fig.height=3, fig.width=4, dev='svg'}
-ggplot(sat.act, 
-       aes(x = scale(SATQ), 
-           y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = scale(binding), 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
@@ -228,7 +241,7 @@ ggplot(sat.act,
 ---
 
 ```{r, fig.height=5.5, fig.width=5.5, dev='svg', message=FALSE}
-GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+GGally::ggscatmat(ds_vb_18[, 4:6], alpha = 0.3)
 ```
 
 ---
@@ -237,12 +250,12 @@ class: small
 ### Multiple Regression
 
 ```{r}
-m3 <- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+m3 <- lm(reasoning ~ binding_c + updating_c, ds_vb_18)
 summary(m3)
 ```
 
 --
-- Why is estimate of `SATQ_c` reduced by 35% (was `0.02453`)?
+- Why is estimate of `binding_c` reduced by > 80% (was `r coef(m2)[2]`)?
 --
 
 - In multiple regression, parameter estimates reflect effect after "controlling" for influence of all other predictors!
@@ -262,19 +275,19 @@ summary(m3)$coefficients %>% zapsmall(6)
 --
 
 ```{r}
-## SATQ
-m3_q <- lm(SATQ_c ~ SATV_c, sat.act)
-sat.act$resid_q <- residuals(m3_q)
-summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+## binding
+m3_b <- lm(binding_c ~ updating_c, ds_vb_18)
+ds_vb_18$resid_b <- residuals(m3_b)
+summary(lm(reasoning ~ 0 + resid_b, ds_vb_18))$coefficients 
 ```
 
 --
 
 ```{r}
-## SATV
-m3_v <- lm(SATV_c ~ SATQ_c, sat.act)
-sat.act$resid_v <- residuals(m3_v)
-summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+## updating
+m3_u <- lm(updating_c ~ binding_c, ds_vb_18)
+ds_vb_18$resid_u <- residuals(m3_u)
+summary(lm(reasoning ~ 0 + resid_u, ds_vb_18))$coefficients 
 ```
 
 ---
@@ -473,7 +486,7 @@ ggplot(Prestige, aes(x = education, y = income,
 class: inline-grey
 # Formula Interface for Statistical Models: `~`
 
-Allows symbolic specification of statistical model, e.g. linear models: `lm(ACT ~ SATQ, sat.act)`
+Allows symbolic specification of statistical model, e.g. linear models: `lm(reasoning ~ binding, ds_vb_18)`
 
 Everything to the left of `~` is the dependent variable:
 ```r
@@ -498,19 +511,23 @@ class: small
 # How many Parameters in each Model?
 
 ```{r, eval=FALSE}
-lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
-lm(ACT ~ SATQ_c : SATV_c, sat.act)   # b
-lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act) # c
-lm(ACT ~ SATQ_c*SATV_c, sat.act)     # d
-lm(ACT ~ 0+SATQ_c*SATV_c, sat.act)   # e
+lm(reasoning ~ binding + updating, ds_vb_18)   # a
+lm(reasoning ~ binding : updating, ds_vb_18)   # b
+lm(reasoning ~ 0 + binding:updating, ds_vb_18) # c
+lm(reasoning ~ binding*updating, ds_vb_18)     # d
+lm(reasoning ~ 0+binding*updating, ds_vb_18)   # e
+```
+
+```{r, include=FALSE}
+op <- options(width = 40)
 ```
 
 --
 .pull-left[
 ```{r}
-coef(lm(ACT ~ SATQ_c + SATV_c, sat.act))   # a
-coef(lm(ACT ~ SATQ_c : SATV_c, sat.act))   # b
-coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
+coef(lm(reasoning ~ binding + updating, ds_vb_18))
+coef(lm(reasoning ~ binding : updating, ds_vb_18))
+coef(lm(reasoning ~ 0+binding:updating, ds_vb_18))
 ```
 
 
@@ -518,18 +535,23 @@ coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
 
 .pull-right[
 ```{r}
-coef(lm(ACT ~ SATQ_c*SATV_c, sat.act))     # d
-coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
+coef(lm(reasoning ~ binding*updating, ds_vb_18))
+coef(lm(reasoning ~ 0+binding*updating, ds_vb_18))
 ```
 
 ]
 
+```{r, include=FALSE}
+options(op)
+```
+
+
 ```{r, eval=FALSE, include=FALSE}
-summary(lm(ACT ~ SATQ + SATV, sat.act))   # a
-summary(lm(ACT ~ SATQ : SATV, sat.act))   # b
-summary(lm(ACT ~ 0 + SATQ:SATV, sat.act)) # c
-summary(lm(ACT ~ SATQ*SATV, sat.act))     # d
-summary(lm(ACT ~ 0+SATQ*SATV, sat.act))   # e
+summary(lm(reasoning ~ binding + updating, ds_vb_18))   # a
+summary(lm(reasoning ~ binding : updating, ds_vb_18))   # b
+summary(lm(reasoning ~ 0 + binding:updating, ds_vb_18)) # c
+summary(lm(reasoning ~ binding*updating, ds_vb_18))     # d
+summary(lm(reasoning ~ 0+binding*updating, ds_vb_18))   # e
 ```
 
 ---
@@ -566,7 +588,7 @@ class: small
 It is important to always know of what type variables are. Use `str()` on a `data.frame` (or `glimpse()` after loading the `tidyverse`) to obtain information regarding the structure, including variable types: 
 
 ```{r}
-str(sat.act) ## alternatively tibble::glimpse(sat.act)
+str(ds_vb_18) ## alternatively tibble::glimpse(ds_vb_18)
 ```
 
 - Numerical covariates are `int` or `num`.
@@ -577,12 +599,12 @@ str(sat.act) ## alternatively tibble::glimpse(sat.act)
 ---
 class: small
 
-# Models with Categorical Covariates
+## Models with Categorical Covariates
 
-We might be interested in testing whether ACT differs between men and women. 
+We might be interested in testing whether reasoning performance differs between both orders in which tasks were presented. 
 .pull-left2[
 ```{r}
-m3 <- lm(ACT ~ gender, sat.act)
+m3 <- lm(reasoning ~ order, ds_vb_18)
 summary(m3)
 ```
 
@@ -596,15 +618,15 @@ require(dplyr)
 
 .pull-right2[
 ```{r}
-mean(sat.act$ACT)
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT))
+mean(ds_vb_18$reasoning)
+ds_vb_18 %>% group_by(order) %>%
+  summarise(m = mean(reasoning))
 ```
 
 ```{r}
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT)) %>%
-  {.$m[2] - .$m[1]}
+ds_vb_18 %>% group_by(order) %>%
+ summarise(m=mean(reasoning)) %>%
+ {.$m[2] - .$m[1]}
 ```
 ]
 
@@ -621,7 +643,7 @@ class: small
 
 .pull-left[
 ```{r}
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 ]
 
@@ -634,7 +656,7 @@ class: small
 
 .pull-left[
 ```{r}
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE, include=FALSE}
@@ -649,20 +671,20 @@ afex::set_sum_contrasts()
 
 .pull-right[
 ```{r}
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 ```
 ]
 
 ---
 class: small
 
-# Models with Categorical Covariates II 
+## Models with Categorical Covariates II 
 
 Same model as before, but with sum/effects contrasts.
 
 .pull-left2[
 ```{r}
-m4 <- lm(ACT ~ gender, sat.act)
+m4 <- lm(reasoning ~ order, ds_vb_18)
 summary(m4)
 ```
 
@@ -674,12 +696,12 @@ op <- options(width = 40)
 
 .pull-right2[
 ```{r}
-mean(sat.act$ACT)
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT))
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT)) %>% 
-  summarise(mean(m))
+mean(ds_vb_18$reasoning)
+ds_vb_18 %>% group_by(order) %>%
+  summarise(m = mean(reasoning))
+ds_vb_18 %>% group_by(order) %>%
+ summarise(m=mean(reasoning)) %>% 
+ summarise(mean(m))
 
 ```
 
@@ -704,7 +726,7 @@ op <- options(width = 70)
 
 .pull-left2[
 ```{r}
-m5 <- lm(ACT ~ gender*education, sat.act)
+m5 <- lm(reasoning ~ order*training, ds_vb_18)
 coef(m5)
 ```
 
@@ -712,9 +734,9 @@ coef(m5)
 
 .pull-right2[
 ```{r}
-sat.act %>% 
-  group_by(gender,education) %>%
-  summarise(mean(ACT))
+ds_vb_18 %>% 
+  group_by(order,training) %>%
+  summarise(mean(reasoning))
 ```
 ]
 
@@ -737,7 +759,7 @@ op <- options(width = 70)
 
 .pull-left2[
 ```{r}
-m6 <- lm(ACT ~ gender*education, sat.act)
+m6 <- lm(reasoning ~ order*training, ds_vb_18)
 coef(m6)
 ```
 
@@ -745,11 +767,11 @@ coef(m6)
 
 .pull-right2[
 ```{r}
-sat.act %>% 
-  group_by(gender,education) %>%
-  summarise(m = mean(ACT)) %>% 
-  ungroup() %>% 
-  summarise(mean(m))
+ds_vb_18 %>% 
+ group_by(order,training) %>%
+ summarise(m=mean(reasoning)) %>% 
+ ungroup() %>% 
+ summarise(mean(m))
 ```
 ]
 
@@ -762,14 +784,21 @@ options(op)
 
 .pull-left3[
 ```{r, eval=FALSE}
-lm(ACT ~ SATQ + SATV, sat.act)   # a: 3
-lm(ACT ~ SATQ : SATV, sat.act)   # b: 2
-lm(ACT ~ 0 + SATQ:SATV, sat.act) # c: 1
-lm(ACT ~ SATQ*SATV, sat.act)     # d: 4
-lm(ACT ~ 0+SATQ*SATV, sat.act)   # e: 3
+lm(reasoning ~ binding + updating, 
+   ds_vb_18)   # a: 3
+lm(reasoning ~ binding : updating, 
+   ds_vb_18)   # b: 2
+lm(reasoning ~ 0 + binding:updating, 
+   ds_vb_18)   # c: 1
+lm(reasoning ~ binding*updating, 
+   ds_vb_18)   # d: 4
+lm(reasoning ~ 0+binding*updating, 
+   ds_vb_18)   # e: 3
 
-lm(ACT ~ SATQ, sat.act)          # f: 2
-lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
+lm(reasoning ~ binding, 
+   ds_vb_18)   # f: 2
+lm(reasoning ~ 0 + binding, 
+   ds_vb_18)   # g: 1
 ```
 
 ]
@@ -777,20 +806,20 @@ lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
 --
 .pull-right3[
 ```{r, eval=FALSE}
-lm(ACT ~ gender, sat.act)                  # a
-lm(ACT ~ 0+gender, sat.act)                # b
-lm(ACT ~ gender+education, sat.act)        # c
-lm(ACT ~ 0+gender+education, sat.act)      # d
-lm(ACT ~ gender:education, sat.act)        # e
-lm(ACT ~ 0+gender:education, sat.act)      # f
-lm(ACT ~ gender*education, sat.act)        # g
-lm(ACT ~ 0+gender*education, sat.act)      # h
-lm(ACT ~ gender+gender:education, sat.act) # i
+lm(reasoning ~ order, ds_vb_18)               # a
+lm(reasoning ~ 0+order, ds_vb_18)             # b
+lm(reasoning ~ order+training, ds_vb_18)      # c
+lm(reasoning ~ 0+order+training, ds_vb_18)    # d
+lm(reasoning ~ order:training, ds_vb_18)      # e
+lm(reasoning ~ 0+order:training, ds_vb_18)    # f
+lm(reasoning ~ order*training, ds_vb_18)      # g
+lm(reasoning ~ 0+order*training, ds_vb_18)    # h
+lm(reasoning ~ order+order:training, ds_vb_18)# i
 ```
 
 ```{r}
-levels(sat.act$gender)
-levels(sat.act$education)
+levels(ds_vb_18$order)
+levels(ds_vb_18$training)
 ```
 
 
@@ -804,10 +833,10 @@ class: small
 
 
 ```{r}
-coef(lm(ACT ~ gender, sat.act))                  # a: 2
-coef(lm(ACT ~ 0+gender, sat.act))                # b: 2
-coef(lm(ACT ~ gender+education, sat.act))        # c: 7
-coef(lm(ACT ~ 0+gender+education, sat.act))      # d: 7
+coef(lm(reasoning ~ order, ds_vb_18))                 # a: 2
+coef(lm(reasoning ~ 0+order, ds_vb_18))               # b: 2
+coef(lm(reasoning ~ order+training, ds_vb_18))        # c: 4
+coef(lm(reasoning ~ 0+order+training, ds_vb_18))      # d: 4
 ```
 
 ---
@@ -815,14 +844,14 @@ class: small
 
 
 ```{r}
-coef(lm(ACT ~ gender:education, sat.act))        # e: 13
-coef(lm(ACT ~ 0+gender:education, sat.act))      # f: 12
+coef(lm(reasoning ~ order:training, ds_vb_18))        # e: 7
+coef(lm(reasoning ~ 0+order:training, ds_vb_18))      # f: 6
 ```
 
 ```{r, eval = FALSE}
-coef(lm(ACT ~ gender*education, sat.act))        # g: 12
-coef(lm(ACT ~ 0+gender*education, sat.act))      # h: 12
-coef(lm(ACT ~ gender+gender:education, sat.act)) # i: 12
+coef(lm(reasoning ~ order*training, ds_vb_18))        # g: 6
+coef(lm(reasoning ~ 0+order*training, ds_vb_18))      # h: 6
+coef(lm(reasoning ~ order+order:training, ds_vb_18))  # i: 6
 ```
 
 
@@ -862,7 +891,7 @@ op <- options(width = 70)
 .pull-left2[
 ```{r, message=FALSE}
 afex::set_sum_contrasts()
-m6 <- lm(ACT ~ gender*education, sat.act)
+m6 <- lm(reasoning ~ order*training, ds_vb_18)
 summary(m6)
 ```
 
@@ -870,11 +899,11 @@ summary(m6)
 
 .pull-right2[
 ```{r}
-sat.act %>% 
-  group_by(gender, education) %>%
-  summarise(m = mean(ACT)) %>% 
-  ungroup() %>% 
-  summarise(mean(m))
+ds_vb_18 %>% 
+ group_by(order, training) %>%
+ summarise(m=mean(reasoning)) %>% 
+ ungroup() %>% 
+ summarise(mean(m))
 ```
 ]
 
@@ -896,7 +925,7 @@ Anova(m6, type = 3)
 - Type III tests require orthogonal contrasts (e.g.,`contr.sum`); recommended:
   - For experimental designs in which imbalance is completely random and not structural,
   - Complete cross-over interactions (i.e., main effects in presence of interaction) possible.
-- Type II are more appropriate if imbalance is structural (i.e., observational data; maybe here).
+- Type II are more appropriate if imbalance is structural (i.e., observational data).
 
 ---
 class: small, inline-grey
@@ -906,9 +935,9 @@ class: small, inline-grey
 .pull-left[
 ```{r, message=FALSE, warning=FALSE}
 library("emmeans")    
-(emms <- emmeans(m6, ~education))
+(emms <- emmeans(m6, "training"))
 ```
-`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, c("training", "order"))`).
 
 One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 
@@ -928,9 +957,9 @@ class: small, inline-grey
 .pull-left[
 ```{r, message=FALSE, warning=FALSE}
 library("emmeans")  
-(emms <- emmeans(m6, "education")) 
+(emms <- emmeans(m6, "training")) 
 ```
-`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, ~education*gender)`).
+`emmeans` returns estimated marginal means (or least-square means for linear regression) for model terms (e.g., `emmeans(m6, c("training", "order"))`).
 
 One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 
@@ -939,9 +968,9 @@ One can specify arbitrary contrasts on marginal means (e.g., `contrast()`).
 .pull-right[
 ```{r, message=FALSE}
 cs <- list(
-  "12-45" = c(0, -0.5, -0.5, 0, 0.5, 0.5),
-  "0-3" = c(-1, 0, 0, 1, 0, 0),
-  "all-last" = c(-rep(0.2, 5), 1)
+  "c-u" = c(1, -1, 0),
+  "c-wm" = c(1, -0.5, -0.5),
+  "c-uub" = c(1, -0.75, -0.25)
 )
 contrast(emms, cs, adjust = "holm")
 ```
@@ -978,16 +1007,16 @@ class: small
 
 ```{r, message=FALSE, comment='#'}
 library("afex")
-sat.act$id <- factor(1:nrow(sat.act))
-(a1 <- aov_car(ACT ~ gender+Error(id), sat.act))
+(a1 <- aov_car(reasoning ~ order + Error(code), 
+               ds_vb_18))
 ```
 ]
 --
 
 .pull-right[
 ```{r}
-(a2 <- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 <- aov_car(reasoning ~ order*training + 
+                 Error(code), ds_vb_18))
 ```
 ]
 
@@ -997,8 +1026,8 @@ sat.act$id <- factor(1:nrow(sat.act))
 
 .pull-left[
 ```{r}
-(a2 <- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 <- aov_car(reasoning ~ order*training +
+                 Error(code), ds_vb_18))
 ```
 
 for more see:  
@@ -1007,7 +1036,7 @@ https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html
 ]
 .pull-right[
 ```{r, fig.width=4.5, fig.height=4.5, dev='svg'}
-afex_plot(a2, "education", "gender",
+afex_plot(a2, "training", "order",
           data_geom = geom_violin, 
           data_arg = list(width = 0.4)) +
   theme(legend.position = "bottom")
@@ -1023,14 +1052,15 @@ afex_plot(a2, "education", "gender",
 
 .pull-left[
 ```{r}
-emmeans(a2, "gender")
+emmeans(a2, "order")
 ```
 
 ]
 
 .pull-right[
 ```{r}
-emmeans(a2, c("education")) %>% pairs
+
+emmeans(a2, c("training")) %>% pairs
 ```
 
 ]
@@ -1244,8 +1274,8 @@ a1
 
 .pull-left[
 ```{r}
-pairs(emmeans(a1, "Machine"), 
-      adjust = "holm")
+emmeans(a1, "Machine", adjust = "holm") %>% 
+  pairs
 ```
 ]
 
@@ -1253,8 +1283,8 @@ pairs(emmeans(a1, "Machine"),
 
 .pull-right[
 ```{r}
-pairs(emmeans(mmach, "Machine"), 
-      adjust = "holm")  ## complete pooling results
+emmeans(mmach, "Machine", adjust = "holm") %>% 
+  pairs ## complete pooling results
 ```
 
 ]
@@ -1332,5 +1362,5 @@ class: center, middle, inverse
 - Cohen, J., Cohen, P., West, S. G., & Aiken, L. S. (2002). *Applied Multiple Regression/Correlation Analysis for the Behavioral Sciences.* New York: Routledge Academic.
 
 ### References Example Data:
-- Revelle, William, Wilt, Joshua, and Rosenthal, Allen (2009) Personality and Cognition: The Personality-Cognition Link. In Gruszka, Alexandra and Matthews, Gerald and Szymura, Blazej (Eds.) _Handbook of Individual Differences in Cognition: Attention, Memory and Executive Control_, Springer.
+- De Simoni, C., & von Bastian, C. C. (2018). Working memory updating and binding training: Bayesian evidence supporting the absence of transfer. _Journal of Experimental Psychology: General_, 147(6), 829–858. https://doi.org/10.1037/xge0000453
 - Skovgaard-Olsen, N., Singmann, H., & Klauer, K. C. (2016). The relevance effect and conditionals. *Cognition*, 150, 26-36. https://doi.org/10.1016/j.cognition.2015.12.017
