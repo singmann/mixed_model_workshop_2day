@@ -474,7 +474,7 @@ ggplot(iris2, aes(x = Species, y = Petal.Length)) +
 ---
 class: inline-grey
 
-### Exercise
+### Exercise 0
 
 - Open `exercises/exercise_0.Rmd` (or the exercise handout or  `exercises/exercise_0.nb.html` for a nicer format of the instruction).
 - Follow text and try to solve a few small tasks helping you to get comfortable with the `tidyverse` (without looking at the solution).

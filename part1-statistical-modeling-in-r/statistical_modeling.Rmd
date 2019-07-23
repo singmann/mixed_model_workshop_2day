@@ -57,13 +57,18 @@ class: inline-grey
     - Continuous versus categorical covariates 
     - `model.matrix()` and factor codings.
     - Categorical covariates and interactions
+--
 
 
 - Tests of Model Terms/Effects with `car::Anova()`
 - Follow-up Tests with `emmeans`
+--
+
 
 
 - ANOVAs with `afex`
+--
+
 
 
 - Problem with Repeated-Measures: IID assumption
@@ -97,6 +102,7 @@ class: small
     - accuracy in working memory updating task
     - $d'$ (d-prime) working memory binding task (pair recognition)
     - accuracy in 4 different reasoning tasks (diagramming relationships, letter sets, location sets, Raven matrices)
+--
 
 ```{r, message=FALSE}
 library("tidyverse")
@@ -147,6 +153,7 @@ where $\bf{x_0}$ is a vector of 1s of length $n$.
 - Errors $\bf{\epsilon}$ are assumed to come from a normal distribution (i.e., uncorrelated).
 
 - $\beta_0$ and  $\beta_{\mbox{WM}}$ are scalars (i.e., of length 1) and called *regression coefficients* or *parameters* ( $\sigma^2_{\epsilon}$ is also a parameter). $\beta_0$ is also known as the *intercept*.
+--
 
 ******
 
@@ -165,6 +172,7 @@ summary(m1)
 ```
 
 ]
+--
 .pull-right2[
 ```{r}
 coef(m1)
@@ -293,15 +301,15 @@ summary(lm(reasoning ~ 0 + resid_u, ds_vb_18))$coefficients
 ---
 class: inline-grey
 
-### Exercise 1 (Multiple Regression)
+### Exercise 1.1 (Multiple Regression)
 
-- Open `exercises/exercise_1_MR.Rmd` (or the exercise handout or  `exercises/exercise_1_MR.nb.html` for a nicer format of the instruction).
+- Open `exercises/exercise_1.1_MR.Rmd` (or the exercise handout or  `exercises/exercise_1.1_MR.nb.html` for a nicer format of the instruction).
 - Follow text and try to solve two small tasks helping you to get comfortable with multiple regression.
 - The data comes with `R`, `data(USArrests)`, and contains statistics, in arrests per 100,000 residents, for assault, murder, and rape in each of the 50 US states in 1973. Also given is the percent of the population living in urban areas.
 - Research question: *Which variables predict murder rates and to what degree?* 
-- Exercise 1: Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable.
+- Task 1: Create one simple linear regression model with murder rate as dependent variable and each of the other variables as independent variable.
     - Which of the three variables shows a significant effect on murder rates?
-- Exercise 2: Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
+- Task 2: Create one overall model with murder rate as dependent variable and the three other variables as independent variables (without interactions).
     - Which of the three variables now shows a significant effect on murder rates? If there are differences, how can these differences be explained?
 
 ---
@@ -313,11 +321,14 @@ class: inline-grey
     - Slopes (e.g., $b_1$ or $\beta_1$): gradient of line, amount by which $y$ (DV) increases if $x$ (IV) increases by 1
 
 
+
+--
 - Linear transformation of variables does not change significance of slope or adequacy of model
     - transformation can simplify interpretation of estimates and comparison across scales
     - in 1 predictor case: if both variables z-transformed, slope = Pearson correlation
 
 
+--
 - Regression allows including several predictors
 - Potential problems **multicollinearity** (i.e., predictors correlated among each other)
     - imprecise regression estimates
@@ -326,6 +337,11 @@ class: inline-grey
 - Parameter estimates reflects unique contribution of each predictor (i.e., beyond what is explained by other variables or controlling for other variables)
 
 
+
+--
+### Take-Home Message
+- If you fit a regression type model, always attempt to understand what the estimated coefficients mean. Without being able to explain what the parameters mean, you do not really know what you are doing.
+- Correlations among predictors cannot be ignored and are potentially dangerous. They affect which conclusions can be drawn from data and model.
 
 ---
 .pull-left[
@@ -343,8 +359,8 @@ glimpse(Prestige, width = 50)
 - `income`: Average income of incumbents, dollars, in 1971. 
 - `education`: Average education of occupational incumbents, years, in 1971. 
 - `prestige`: Pineo-Porter prestige score for occupation, from a social survey conducted in the mid-1960s (from 0 to 100).
-
 ]
+--
 .pull-right[
 ```{r, fig.width=5, fig.height=5, dev='svg'}
 GGally::ggscatmat(Prestige, 
@@ -380,6 +396,7 @@ class: small
 
 - Interaction: Effect of one variable depends on value of another variable!
 - For interactions of continuous covariates, it is common to inspect effect conditional at mean and plus/minus 1 SD from mean (Cohen et al., 2002).
+--
 
 ```{r}
 library("emmeans")
@@ -397,6 +414,7 @@ pres_t$prestige.trend * sd(Prestige$prestige)
 ```
 
 ]
+
 .pull-right[
 ```{r}
 summary(mp_3)$coefficients %>% zapsmall
@@ -433,7 +451,7 @@ summary(mp_3)$coefficients %>% zapsmall
 ---
 class: small
 
-- Alternatively, we can inspect interaction by transforming one variable into numerical variable!
+- Additionally, we should inspect interaction by transforming one variable into categorical variable!
 
 ```{r}
 Prestige <- Prestige %>% 
@@ -484,7 +502,7 @@ ggplot(Prestige, aes(x = education, y = income,
 
 ---
 class: inline-grey
-# Formula Interface for Statistical Models: `~`
+## Formula Interface for Statistical Models: `~`
 
 Allows symbolic specification of statistical model, e.g. linear models: `lm(reasoning ~ binding, ds_vb_18)`
 
@@ -508,7 +526,7 @@ Independent variables are to the right of the `~`:
 ---
 class: small
 
-# How many Parameters in each Model?
+## Exercise 1.2: How many Parameters in each Model? (Continuous)
 
 ```{r, eval=FALSE}
 lm(reasoning ~ binding + updating, ds_vb_18)   # a
@@ -561,19 +579,24 @@ summary(lm(reasoning ~ 0+binding*updating, ds_vb_18))   # e
 - A linear model attempts to describe data generating process of DV using IVs and distributional assumptions (e.g., normal residuals)
     - R formula interface allows specification in symbolic form
     - Regression equation allows predictions for arbitrary values of IVs
+--
 
 
 - Linear transformation of variables affects interpretation of estimates, but not overall adequacy of model
     - Multiple regression estimates coefficients while "controlling" for other IVs
-    - Multicollinearity might affect estimates and precision
+    - Multicollinearity affects estimates and their precision
+--
 
 
 - Interactions test if effect of one variable depend on value of other variable (i.e., magnitude of effect of one variable changes conditional on value of other variable)
     - Interpretation of interaction often not obvious (e.g., 2-way interaction has two equally valid possibilities, context matters)
     - If model involves interaction, estimates of lower order effects are effect if other variables are 0 (centring of variables often provides reasonable interpretation if interactions are involved)
 
+--
 
-
+### Take-Home Message
+- Interactions of continuous variables are not trivial. Avoid if not absolutely necessary.
+- If interaction is included, it affects the involved lower-order effects as well!
 ---
 class: center, middle, inverse
 
@@ -593,6 +616,9 @@ str(ds_vb_18) ## alternatively tibble::glimpse(ds_vb_18)
 
 - Numerical covariates are `int` or `num`.
 - Categorical covariates are `Factor` (or `character`).
+
+--
+
 
 **Make sure all categorical variables are factors before adding them to a statistical model!**
 
@@ -780,25 +806,18 @@ options(op)
 ```
 
 ---
-# Categorical Covariates and Model Matrices
+## Exercise 1.2: How many Parameters in each Model? (Categorical)
 
 .pull-left3[
 ```{r, eval=FALSE}
-lm(reasoning ~ binding + updating, 
-   ds_vb_18)   # a: 3
-lm(reasoning ~ binding : updating, 
-   ds_vb_18)   # b: 2
-lm(reasoning ~ 0 + binding:updating, 
-   ds_vb_18)   # c: 1
-lm(reasoning ~ binding*updating, 
-   ds_vb_18)   # d: 4
-lm(reasoning ~ 0+binding*updating, 
-   ds_vb_18)   # e: 3
+reasoning ~ binding + updating   # a: 3
+reasoning ~ binding : updating,  # b: 2
+reasoning ~ 0 + binding:updating # c: 1
+reasoning ~ binding*updating     # d: 4
+reasoning ~ 0+binding*updating   # e: 3
 
-lm(reasoning ~ binding, 
-   ds_vb_18)   # f: 2
-lm(reasoning ~ 0 + binding, 
-   ds_vb_18)   # g: 1
+reasoning ~ binding              # f: 2
+reasoning ~ 0 + binding          # g: 1
 ```
 
 ]
@@ -858,7 +877,7 @@ coef(lm(reasoning ~ order+order:training, ds_vb_18))  # i: 6
 
 ---
 class: inline-grey
-# Interim Summary
+### Interim Summary
 
 - The `R` `formula` interface allows symbolic specification of statistical models.
   - `+` = main effects
@@ -867,14 +886,28 @@ class: inline-grey
   - `0+`/`-1` = no intercept
 
 
+--
+
 - Categorical variables are transformed into numerical variables using contrast functions (via `model.matrix()`; see Cohen et al., 2002)
   - If models include interactions, orthogonal contrasts (e.g., `contr.sum`) in which the intercept corresponds to the (unweighted) grand mean should be used: `afex::set_sum_contrasts()`
   - Dummy/treatment contrasts (`R` default) lead to simple effects for lower order effects.
   - **Coding only affects interpretation of parameters/tests not overall model fit.**
+--
+
 
 
 - For models with solely numerical independent variables, suppressing intercept works as expected.
 - For models with categorical independent variables, suppressing intercept or other lower-order effects often leads to very surprising results (and should generally be avoided).
+
+
+--
+
+
+### Take-Home Message
+
+- Make sure all categorical variables are factors before adding them to a statistical model!
+- Factors are transformed into numerical covariates via contrast function, which can have surprising consequencues.
+- Default `R` 'treatment' contrasts are not appropriate for interactions (as 0 corresponds to first factor level).
 
 ---
 class: center, middle, inverse
@@ -910,6 +943,15 @@ ds_vb_18 %>%
 ```{r, include=FALSE}
 options(op)
 ```
+
+
+--
+
+
+
+.pull-left2[
+**If model includes factors with more than 2 levels and interactions, we generally cannot interpret coefficients directly!**
+]
 
 ---
 
@@ -1075,15 +1117,21 @@ emmeans(a2, c("training")) %>% pairs
     - Use `emmeans` for inspection of results on factor-levels and design cells
 
 
+
+--
 - When models involve categorical variables and interactions, do not forget appropriate contrasts: `afex::set_sum_contrasts()`
     - Lower-order effects (coefficients and Type 3 tests) are evaluated at the origin of other variables.
     - `afex` always uses appropriate contrasts per default (without need for setting)
 
 
+
+--
 - Use Type III tests for experimental designs and Type II tests for observational data
     - Both only differ for unbalanced data; in the way how unbalance is treated
 
 
+
+--
 - Make many plots to understand interactions
     - Be careful when interpreting main effects in light of interactions
 
@@ -1104,6 +1152,8 @@ Statistical models defined by relationship of covariates and assumption of resid
 - `ordinal::clm()` cumulative link models for ordinal data
 
 
+
+--
 - (2) Models support repeated-measures usually via random-effects parameters:
 - `nlme::lme()` linear mixed-effects models (generally superseded by `lme4`)
 - `lme4::lmer()` linear mixed-effects models (modern implementation)
@@ -1128,10 +1178,14 @@ class: inline-grey
   - Identical distribution: All observations sampled from same distribution.
 
 
+
+--
 - For repeated-measures independence assumption often violated (e.g., data points from one participant more likely to be similar to each other).
 - Violation of independence assumption can have dramatic consequences on statistical inferences from a model (e.g., increased or decreased Type I errors).
 
 
+
+--
 - Three approaches for dealing with repeated-measures (e.g., Gelman & Hill, 2007):
   1. *Complete pooling*: Ignore dependency in data (often not appropriate, results likely biased, not trustworthy)
   2. *No pooling*: Two step procedure. 1. Separate data based on factor producing dependency and calculate separate statistical model for each subset. 2. Analysis of distribution of estimates from step 1. (Prone to overfitting which decreases precision of parameter estimates; estimation error accumulates in step 2; combination and analysis of individual estimates can be non-trivial if interest is in more than 1 parameter)
@@ -1179,6 +1233,8 @@ str(Machines)
 
 Research question: Do the machines differ in their score?
 
+--
+
 ```{r, include=FALSE}
 library("tidyverse")
 ```
@@ -1197,7 +1253,7 @@ Machines %>% group_by(Machine) %>%
 ```{r, fig.height=4, dev='svg'}
 ggplot(Machines, aes(x = Machine, y = score)) +
   geom_point() + 
-  facet_wrap(~ Worker) + 
+  facet_wrap("Worker") + 
   theme_light()
 ```
 

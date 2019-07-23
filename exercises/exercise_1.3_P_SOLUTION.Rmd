@@ -1,9 +1,14 @@
 ---
-title: "Exercise 1: Pooling (Solution)"
+title: "Exercise 1.3: Pooling (Solution)"
 output: html_notebook
 editor_options: 
   chunk_output_type: inline
 ---
+
+```{r, include=FALSE}
+options(dplyr.show_progress = FALSE)
+```
+
 
 ## Skovgaard-Olsen et al. (2016): The Relevance Effect and Conditionals
 
@@ -37,7 +42,7 @@ Each participant worked on 12 items, that is each participant provided 12 estima
 
 Data prepared for this exercise is available in the folder (full data available at: https://osf.io/j4swp/)
 
-# Exercise 1: Analyse the data using the no-pooling approach
+# Task 1: Analyse the data using the no-pooling approach
 - Calculate the regression between *P*(if *A* then *B*) and *P*(*B*|*A*) separately for each participant.
 - Does this analysis suggest that there is an overall association between the two variables? If so, how strong is this relationship?
 
@@ -126,7 +131,7 @@ summary(lm(estimate ~ 1, ex1_slopes))
 ```
 
 
-# Exercise 2: Analysing more conditions using complete pooling and no-pooling approach
+# Task 2: Analysing more conditions using complete pooling and no-pooling approach
 
 The study of Skovgaard-Olsen et al. contained a further manipulation not considered so far. These additional data, `dat2`, can be found in file `ssk16_dat_prepared_ex2.rda`.
 
@@ -195,14 +200,14 @@ emtrends(ex2_comp_3, "rel_cond", var = "B_given_A")
 - Your task is to calculate the regression parameter (and potentially also the intercept) for each participant and within-subject condition (i.e., relationship of `if_A_then_B` and `B_given_A` for each `p_id` and level of `rel_cond`).
 - Then compare the individual regression parameters across conditions (i.e., for each level of `rel_cond`). Do this comparison in a graphical way and also statistically (i.e., ANOVA using `afex`).
 
-```{r}
+```{r, message=FALSE}
 ex2_no_pooling_estimates <- dat2 %>% 
   group_by(p_id, rel_cond) %>% 
   do(tidy(lm(if_A_then_B ~ B_given_A, .)))
 head(ex2_no_pooling_estimates)
 ```
 
-```{r}
+```{r, message=FALSE}
 ex2_slopes <- ex2_no_pooling_estimates %>% 
   filter(term == "B_given_A")
 

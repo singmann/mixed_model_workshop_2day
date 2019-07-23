@@ -1,5 +1,5 @@
 ---
-title: "Exercises I: Statistical Modeling in R"
+title: "Exercises 1.2: How many Parameters in each Model?"
 author: "Henrik Singmann"
 date: "July 2019 (updated: `r Sys.Date()`)"
 output: pdf_document
