@@ -36,28 +36,58 @@ Our general goal is to use a partial pooling approach with this data using `lm4`
 2. The second model has has by-participant random-slopes for `B_given_A_c` and random-intercepts, as well as the correlation between the random-effects parameters.
 3. The third (and new) model only has by-participant random intercepts and no random slopes.
 
+
 ```{r}
-# m1 <- lmer( ... , dat2)
-# m2 <- lmer( ... , dat2)
-# m3 <- lmer( ... , dat2)
+m1 <- lmer(if_A_then_B_c ~ B_given_A_c + (0+B_given_A_c|p_id), dat2)
+m2 <- lmer(if_A_then_B_c ~ B_given_A_c + (B_given_A_c|p_id), dat2)
+m3 <- lmer(if_A_then_B_c ~ B_given_A_c + (1|p_id), dat2)
 ```
 
 
 Inspect the results of all models:
 
 - Which model shows a singular fit or other convergence problems? Do you have an idea where the convergence problems come from?
+```{r}
+isSingular(m1)
+
+isSingular(m2)
+
+isSingular(m3)
+```
+
 - What do the parameter estimates of the random effects mean?
+```{r}
+summary(m1)$varcor
+
+summary(m2)$varcor
+
+summary(m3)$varcor
+```
+
+
 - Does the choice of random-effects structure affect the fixed-effect estimates and/or inferential statistics?
+```{r}
+summary(m1)$coefficients
+
+summary(m2)$coefficients
+
+summary(m3)$coefficients
+```
+
 - Which model do you think would be the best to report?
+
+*Answer:* Difficult, as the most reasonable model, `m2`, shows a singular fit. I would rather try to fit the model without correlation. If I would be forced, I would probably use model `m3` that does not show a singular fit. However, the fact that the estimates, SEs, and $t$-values are practically identical means that it would not really matter. So whatever model I would decide on, I would report the fact that essentially the same results are obtained for all possible random-effects structures.
 
 # Task 2: Suppressing the Correlation
 
 The only model we have not yet considered for this data is a model without correlation among the random-effects parameters. Can you set it up?
 
 ```{r}
-# m4 <- lmer( ... , dat2)
+m4 <- lmer(if_A_then_B_c ~ B_given_A_c + (B_given_A_c||p_id), dat2)
+summary(m4)
 ```
 
 Does this model show any benefit compared to one of the previous models?
 
+*Answer:* Yes. Removing the correlation removes the singular fit. I would prefer this model to all previous models.
 

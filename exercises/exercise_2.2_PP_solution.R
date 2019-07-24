@@ -1,6 +1,5 @@
 ## ---- message=FALSE------------------------------------------------------
 library("tidyverse")
-library("viridis")
 library("cowplot")
 theme_set(theme_bw(base_size = 12) + 
             theme(legend.position="bottom", 
@@ -13,7 +12,7 @@ w <- read_csv("weather_wb.csv")
 w %>% 
   group_by(id) %>% 
   summarise(n = n()) %>% 
-  do(psych::describe(.$n))
+  psych::describe()
 
 
 ## ------------------------------------------------------------------------
@@ -22,14 +21,13 @@ w %>%
   summarise(mean_sunh = mean(sunh),
             mean_swb = mean(swb)) %>% 
   select(-id) %>% 
-  do(psych::describe(.))
+  psych::describe()
 
 
 ## ---- fig.width=4, fig.height=4, dpi=125---------------------------------
 ## Rmarkdown settings: fig.width=4, fig.height=4, dpi=125
 ggplot(w, aes(x = sunh, y = swb, color = id)) +
-  geom_point(alpha = 0.6, position = position_jitter()) +
-  scale_color_viridis()
+  geom_point(alpha = 0.6, position = position_jitter())
 
 
 ## ---- fig.width=2, fig.height=2.5, dpi=150-------------------------------
@@ -64,8 +62,7 @@ no_plot <- no_all %>%
 
 ggplot(w, aes(x = sunh, y = swb, color = id)) +
   geom_point(alpha = 0.8, position = position_jitter()) +
-  geom_abline(data = no_plot, aes(slope = sunh, intercept = `(Intercept)`, color = id), alpha = 0.3) +
-  scale_color_viridis()
+  geom_abline(data = no_plot, aes(slope = sunh, intercept = `(Intercept)`, color = id), alpha = 0.3)
 
 
 ## ---- fig.width=4, fig.height=4, dpi=125---------------------------------
@@ -77,7 +74,6 @@ ggplot(w, aes(x = sunh, y = swb, color = id)) +
   geom_abline(data = no_plot, aes(slope = sunh, 
                                   intercept = `(Intercept)`, 
                                   color = id), alpha = 0.8) +
-  scale_color_viridis() +
   xlim(0, 12) + ylim(0, 10) +
   theme(legend.position = "none")
 
@@ -125,6 +121,40 @@ ggplot(data = w, aes(x = sunh, y = swb)) +
                                      slope = "sunh"), 
               color = "lightgrey", size = 1.2) +
   geom_abline(intercept = fixef(mm1)[1], slope = fixef(mm1)[2], size = 1.5)
+
+
+
+## ------------------------------------------------------------------------
+mean(no_slope$estimate)
+coef(cp2)[2]
+
+(mean(no_slope$estimate) - coef(cp2)[2]) / 2
+fixef(mm1)[2]
+
+
+
+## ------------------------------------------------------------------------
+w <- w %>% 
+  group_by(id) %>% 
+  mutate(sunh_pm = mean(sunh), 
+         sunh_pmc = sunh - mean(sunh)) %>% 
+  ungroup
+
+
+## ------------------------------------------------------------------------
+mm2 <- lmer(swb ~ sunh_pmc + sunh_pm + (sunh_pmc|id), w)
+summary(mm2)
+
+
+## ---- fig.width=4, fig.height=3.5, dpi=125-------------------------------
+rnd_coefs <- as_tibble(coef(mm2)$id)
+
+ggplot(data = w, aes(x = sunh_pmc, y = swb)) + 
+  geom_point(alpha = 0.2, pch = 16, size = 3) + 
+  geom_abline(data = rnd_coefs, aes_string(intercept = "`(Intercept)`", 
+                                     slope = "sunh_pmc"), 
+              color = "lightgrey", size = 1.2) +
+  geom_abline(intercept = fixef(mm2)[1], slope = fixef(mm2)[2], size = 1.5)
 
 
 

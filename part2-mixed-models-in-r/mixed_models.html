@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 # Mixed Models in R
 ## A Practical Introduction
 ### Henrik Singmann (University of Warwick)<br/>Twitter: <a href='https://twitter.com/HenrikSingmann'><span class="citation">@HenrikSingmann</span></a>
-### May 2019
+### Jul 2019
 
 ---
 
@@ -293,7 +293,7 @@ First model did not allow for different intercepts, `\(\beta_0\)`, for each part
 `$$\left( \begin{matrix} S_0 \\ S_{B|A} \end{matrix} \right)
  \sim \mathcal{N}\left( \left[ \begin{matrix} 0 \\ 0 \end{matrix} \right] , \left[ \begin{matrix} \sigma^2_{S_0}&amp;\rho_{S_{0},S_{B|A}}\sigma_{S_{0}}\sigma_{S_{B|A}} \\ \rho_{S_{B|A},S_{0}}\sigma_{S_{0}}\sigma_{S_{B|A}}&amp;\sigma^2_{S_{B|A}} \end{matrix} \right] \right)$$`
 
-Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B ~ B_given_A + (B_given_A|p_id), dat2)`
+Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B_c ~ B_given_A_c + (B_given_A_c|p_id), dat2)`
 
 
 ```
@@ -363,16 +363,19 @@ summary(m_r)
 ## boundary (singular) fit: see ?isSingular
 ```
 
-----
+---
 
-# Exercise 2: Fitting First Mixed Model
+# Exercise 2.1: Fitting First Mixed Model
 
-- Open `exercises/exercise_2_FIRST.Rmd`.
+- Open `exercises/exercise_2.1.Rmd` or see corresponding handout.
+
+
 
 - **Task 1:** Goal is to recreate the first two models from the slides, add one more model, and inspect the results.
+    - Dependent variable: `if_A_then_B_c`
+    - Fixed effect: `B_given_A_c`
 
-- Dependent variable: `if_A_then_B_c`
-- Fixed effect: `B_given_A_c`
+
 
 1. The first model only has by-participant (i.e., by `p_id`) random-slopes for `B_given_A_c`.
 2. The second model has has by-participant random-slopes for `B_given_A_c` and random-intercepts, as well as the correlation between the random-effects parameters.
@@ -750,9 +753,9 @@ class: small, inline-grey
 
 class: center, middle, inverse
 
-# Exercise 2 PP: Pooling Revisited
+# Exercise 2.2: Pooling Revisited
 
-(see `exercises\exercise2_PP.Rmd` in folder or handout)
+(see `exercises\exercise_2.2_PP.Rmd` in folder or handout)
 
 ---
 class: center, middle, inverse
@@ -1202,9 +1205,11 @@ More examples of interplay between `mixed` or `lmer` with `emmeans`:
 
 class: center, middle, inverse
 
-# Exercise 2 MRE: Maximal Random-Effects Structure
+# Exercise 2.3: Maximal Random-Effects Structure
 
 (see `exercises\exercise2_MRE.Rmd` in folder or handout)
+
+**Do not fit the model! Only write done the maximal random-effects structure justified by the design.**
 
 ---
 class: small, inline-grey
@@ -1397,8 +1402,8 @@ pairs(emmeans(mach2, "Machine"),
 ---
 class: center, middle, inverse
 
-# Many Labs 2
-# (Last Exercise: `exercise2_ML2.Rmd` or handout)
+# Exercise 2.4: Many Labs 2
+# (Last Exercise: `exercise_2.4_ML2.Rmd` or handout)
 
 ---
 class: small
@@ -1490,13 +1495,10 @@ icc(m1)
 ```
 
 ```
+## # Intraclass Correlation Coefficient
 ## 
-## Intraclass Correlation Coefficient for Linear mixed model
-## 
-## Family : gaussian (identity)
-## Formula: if_A_then_B_c ~ 1 + (1 | p_id)
-## 
-##   ICC (p_id): 0.0377
+##      Adjusted ICC: 0.038
+##   Conditional ICC: 0.038
 ```
 ]
 ---
@@ -1519,13 +1521,10 @@ icc(m1)
 ```
 
 ```
+## # Intraclass Correlation Coefficient
 ## 
-## Intraclass Correlation Coefficient for Linear mixed model
-## 
-## Family : gaussian (identity)
-## Formula: if_A_then_B_c ~ 1 + (1 | p_id)
-## 
-##   ICC (p_id): 0.0377
+##      Adjusted ICC: 0.038
+##   Conditional ICC: 0.038
 ```
 ]
 
@@ -1544,13 +1543,11 @@ icc(m2)
 ```
 
 ```
-## 
-## Intraclass Correlation Coefficient for Linear mixed model
-## 
-## Family : gaussian (identity)
-## Formula: if_A_then_B_c ~ 1 + (rel_cond:B_given_A_c | p_id)
-## 
-##   ICC (p_id): 0.4114
+## zero-length inputs cannot be mixed with those of non-zero length
+```
+
+```
+## [1] NA
 ```
 
 ```r

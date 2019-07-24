@@ -12,7 +12,7 @@ w <- read_csv("weather_wb.csv")
 w %>% 
   group_by(id) %>% 
   summarise(n = n()) %>% 
-  do(psych::describe(.$n))
+  psych::describe()
 
 
 ## ------------------------------------------------------------------------
@@ -21,7 +21,7 @@ w %>%
   summarise(mean_sunh = mean(sunh),
             mean_swb = mean(swb)) %>% 
   select(-id) %>% 
-  do(psych::describe(.))
+  psych::describe()
 
 
 ## ------------------------------------------------------------------------

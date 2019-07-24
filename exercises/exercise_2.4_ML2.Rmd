@@ -1,5 +1,5 @@
 ---
-title: "Exercise 2: Many Labs 2 - Mixed Models Analysis"
+title: "Exercise 2.4: Many Labs 2 - Mixed Models Analysis"
 output: html_notebook
 editor_options: 
   chunk_output_type: inline

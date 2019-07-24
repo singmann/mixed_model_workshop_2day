@@ -1,8 +1,8 @@
 ---
-title: "Exercise 2: Many Labs 2 - Mixed Models Analysis"
-output: 
-  html_document: 
-    self_contained: yes
+title: "Exercise 2.4: Many Labs 2 - Mixed Models Analysis"
+author: "Henrik Singmann"
+date: "January 2019 (updated: `r Sys.Date()`)"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -80,106 +80,9 @@ str(d)
 
 
 1. Analyse the data with a mixed model using `afex::mixed`.  Use accuracy (i.e., `correct`) as dependent variable and `source` and `fluency` as independent variables (plus their interaction). Use crossed random-effects for participants (`uID`) and items (`syllogism`). For any mixed model analysis, you should start with the *maximal model justified by the design*. So your first goal is to figure out what the maximal model justified by the design is. Fit this then. Feel free to use `method = "S"` for faster fitting.
-
-```{r}
-## 1. full model shows a singular fit:
-m_max <-  mixed(correct ~ fluency*source + (1|uID) + (fluency*source|syllogism), d, 
-                method = "S", progress = FALSE) ## suppress output
-summary(m_max)$varcor
-m_max
-```
-
-
 2. The maximal model should show some convergence problems (i.e., "singular fit" and/or a correlation among random components of 1.00). Reduce the random-effects structure of the model until you find a model that does not show any convergence problems.
-
-```{r}
-## r1. full model without correlations also shows singular fit
-m_r1 <-  mixed(correct ~ fluency*source + (1|uID) + (fluency*source||syllogism), d, 
-               method = "S", expand_re = TRUE, progress = FALSE)
-summary(m_r1)$varcor
-
-## r2. model without interaction still shows singular fit 
-m_r2 <-  mixed(correct ~ fluency*source + (1|uID) + (fluency+source||syllogism), d, 
-               method = "S", expand_re = TRUE, progress = FALSE)
-summary(m_r2)$varcor
-
-## r3. model with random slopes only for source still shows singular fit 
-m_r3 <-  mixed(correct ~ fluency*source + (1|uID) + (source||syllogism), d, 
-               method = "S", expand_re = TRUE, progress = FALSE)
-summary(m_r3)$varcor
-
-## r4. model with random slopes only for fluency still shows singular fit 
-m_r4 <-  mixed(correct ~ fluency*source + (1|uID) + (fluency||syllogism), d, 
-               method = "S", expand_re = TRUE, progress = FALSE)
-summary(m_r4)$varcor
-
-## r5. random intercept onloy model does not show singular fit
-m_r5 <-  mixed(correct ~ fluency*source + (1|uID) + (1|syllogism), d, 
-               method = "S", progress = FALSE)
-summary(m_r5)$varcor
-```
-
-
 3. Maximal and reduced models should all show a significant interaction between `source` and `fluency`. Use follow-up tests (e.g., using `emmeans`) to investigate this pattern. Does any of the samples show the pattern predicted by Alter et al. (2007)? When in doubt use the model without convergence issues for that.
-
-```{r}
-## full model shows significant interaction
-m_max
-
-# minimal model shows significant interaction
-m_r5
-
-# models in between also shows significant interaction
-m_r4
-```
-
-
-```{r}
-emmeans(m_r5, "fluency", by = "source")
-
-emmeans(m_r5, "fluency", by = "source") %>% 
-  pairs()
-
-## note, previous solution does not adequately control for multiple testing:
-emmeans(m_r5, "fluency", by = "source") %>% 
-  pairs() %>% 
-  update(by = NULL) %>% 
-  summary(adjust = "holm", infer = TRUE) # infer = TRUE gives CIs
-
-## results very similar for full model
-emmeans(m_max, "fluency", by = "source") %>% 
-  pairs()
-
-```
-
 4. Make a plot of the `fluency` by `source` interaction using `afex_plot`. Spend some time thinking about how to make this plot really nice. Is the default for argument `id` really a good idea here? What is with the default argument of `error`? Remember, `afex_plot` has a vignette showing many examples: https://cran.r-project.org/package=afex/vignettes/afex_plot_introduction.html 
-
-```{r, fig.width=6, fig.height=3, dev='svg'}
-## something is wrong here:
-afex_plot(m_r5, "source", "fluency")
-
-## Maybe we can try with aggregating for each participant:
-afex_plot(m_r5, "source", "fluency", id = "uID")
-
-## For this plot, reordering the x-axis might be a good idea
-#   and we might change a few more settings for data in bg
-#   also, error bars look to wide given our knowledge of effect
-afex_plot(m_r5, "source", "fluency", id = "uID", error = "mean",
-          data_geom = ggbeeswarm::geom_beeswarm, 
-          data_alpha = 0.15,
-          data_arg = list(cex = 0.2, dodge.width = 0.5, color = "black")) + 
-  scale_x_discrete(limits=c("tilburgcaf", "purkyne", "uniporto"))
-```
-
-
-```{r, fig.width=6, fig.height=3, dev='svg'}
-## Maybe not different lines, but different panels? 
-afex_plot(m_r5, panel = "source", x = "fluency", id = "uID", error = "mean",
-          data_alpha = 0.15,
-          data_arg = list(cex = 0.8, dodge.width = 0.5, color = "black"))
-```
-
-
 
 5. The item random effect has only six levels. This is way too low for any real life situation and is only done here as an example. There are two main arguments against this.
     
@@ -191,49 +94,12 @@ afex_plot(m_r5, panel = "source", x = "fluency", id = "uID", error = "mean",
     
     >  For example, in an experiment employing the stimuli-within-condition design [i.e., crossed-random effects with a between-item condition], [...] where the true effect size is large at $d = 0.8$, and where there are a total of eight stimuli (four stimuli per condition)-a sample size which we suspect many experimenters would consider perfectly adequate for a stimulus sample-the maximum attainable power is only about .41. However, if we just double the sample size of stimuli to a still relatively modest 16 (eight per condition), then the maximum power to detect a large effect goes up to about .78.
 
-Consequently, we need to use a different strategy here. Specifically, estimate a mixed-model with only random-effects for participants, but include `syllogism` as a fixed-effect that fully interacts with the other fixed effects. Again, think about what is the maximal model here. Can you estimate it? What do the results from this model tell us regarding our research question. Are there relevant effects of `syllogism`?
-
-```{r}
-# m5_0 <-  mixed(correct ~ fluency*source*syllogism + (syllogism|uID), d, 
-#                method = "S")
-## cannot be estimated, as there are no replicates for participant:syllogism
-
-m5 <-  mixed(correct ~ fluency*source*syllogism + (1|uID), d, 
-               method = "S", progress = FALSE)
-m5 ## important: no interaction of syllogism with fluency
-
-emmeans(m5, "fluency", by = "source")
-
-pairs(emmeans(m5, "fluency", by = "source"))
-
-```
-
+    Consequently, we need to use a different strategy here. Specifically, estimate a mixed-model with only random-effects for participants, but include `syllogism` as a fixed-effect that fully interacts with the other fixed effects. Again, think about what is the maximal model here. Can you estimate it? What do the results from this model tell us regarding our research question. Are there relevant effects of `syllogism`?
 
 6. If we only have one random-effect, we might also use a simple ANOVA to analyse the data. Do so using the `afex` ANOVA functions. Does it show the same results as the mixed-model of question 4? Is there a benefit of using the mixed model over the ANOVA?
 
 
-```{r, message=FALSE}
-
-a6 <- aov_car(correct ~ fluency*source*syllogism + Error(uID/syllogism), d)
-a6
-
-## Compared to mixed model, ANOVA cannot handle partially missing data. 
-## Those observations have to be excluded from the analysis.
-
-pairs(emmeans(a6, "fluency", by = "source"))
-```
-
 7. Which model do you think is the best model making the best argument? Why? Make a plot based on this model (using `afex_plot`) that you would put in a paper of yours (can be the same plot as above of course).
-
-```{r, fig.width=5, fig.height=3, dev='svg'}
-afex_plot(m5, "source", "fluency", id = "uID", 
-          data_geom = ggbeeswarm::geom_beeswarm, 
-          data_alpha = 0.15, dodge = 0.6,
-          data_arg = list(cex = 0.3, dodge.width = 0.6, color = "black")) + 
-  scale_x_discrete(limits=c("tilburgcaf", "purkyne", "uniporto"))
-
-```
-
 
 
 ## References

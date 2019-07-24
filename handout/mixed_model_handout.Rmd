@@ -115,9 +115,22 @@ knitr::opts_chunk$set(echo = TRUE)
     
 
     
-### Mixed Models
+## Mixed Models
 
 - Mixed models extend regular regression models via *random-effects parameters* that account for dependencies among related data points.
+
+### Steps for Running Mixed Model Analysis
+
+1. Identify desired fixed-effects structure
+2. Identify random-effects grouping factors
+3. Identify *maximal random-effects structure justified by the design*:
+    - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
+    - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
+4. Choose method for calculating *p*-values and fit maximal model
+5. In case of singular fits: Iteratively reduce random-effects structure until all degenerate random-effects parameters are removed/fit is not singular.
+
+### Fixed-Effects versus Random-Effects
+
 - __Fixed Effects__
     - Overall  or *population-level average* effect of specific model term (i.e., main effect, interaction, parameter) on dependent variable
     - Independent of stochastic variability controlled for by random effects
@@ -135,6 +148,9 @@ knitr::opts_chunk$set(echo = TRUE)
         + assumed to follow normal distribution which provides _hierarchical shrinkage_, thereby avoids over-fitting
         + should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
         + Note: random-effects parameters (i.e., random-slopes) can only be added to a parameter if there exist multiple data points (i.e., replications) for each level of random-effects grouping factor and the parameter (e.g., each cell of corresponding factor or design-cell) 
+        
+
+
 
 
 ### Random-Effects Parameters in `lme4`/`afex`

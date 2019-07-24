@@ -1,5 +1,2 @@
-- Renumber exercises (1.1, 1.2, etc.)
-- Move exercise 2.1 somewhat earlier. Maybe after first iteration of introducing mixed models.
 - add mixed model steps to handout.
-- change first example data set (no more gender factor please) [DONE]
-- Add person-mean centred variable to weather exercise
+- Use de Simoni & von Bastian data in part 2 (not trivial, given that interesting correlation is across participants)

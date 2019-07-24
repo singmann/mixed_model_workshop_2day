@@ -7,29 +7,26 @@ options(htmltools.dir.version = FALSE)
 # https://github.com/gnab/remark/wiki/Markdown
 options(width=110)
 options(digits = 4)
+options(pillar.sigfig = 4)
 
 
 ## ---- message=FALSE------------------------------------------------------
 library("tidyverse")
-data(sat.act, package = "psych")
-sat.act <- sat.act %>% 
-  mutate(gender = factor(gender, 1:2, labels = c("male", "female")),
-         education = factor(education)) %>% 
-  filter(!is.na(SATQ))  ## remove 13 NAs in SATQ
-summary(sat.act) # alternatively: psych::describe(sat.act)
+load("ds_vb_18.rda")  ## or: load(url("http://singmann.org/download/r/ds_vb_18.rda"))
+summary(ds_vb_18)     ## or: psych::describe(ds_vb_18)
 
 
 ## ---- fig.height=3.75, fig.width= 7, dev='svg', message=FALSE------------
 theme_set(theme_bw(base_size = 17))
-sat2 <- sat.act %>% 
-  gather(key = "sat_type", value = "sat_value", SATV, SATQ)
-ggplot(sat2, aes(x = sat_value, y = ACT)) +
-  geom_point(alpha = 0.2) +
-  facet_wrap(~ sat_type)
+wm2 <- ds_vb_18 %>% 
+  gather(key = "wm_task", value = "wm_performance", binding, updating)
+ggplot(wm2, aes(x = wm_performance, y = reasoning)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~ wm_task, scales = "free_x")
 
 
 ## ------------------------------------------------------------------------
-m1 <- lm(ACT ~ SATQ, sat.act)
+m1 <- lm(reasoning ~ binding, ds_vb_18)
 summary(m1)
 
 
@@ -38,18 +35,19 @@ coef(m1)
 
 
 ## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
-ggplot(sat.act, 
-       aes(x = SATQ, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
 
 
 ## ------------------------------------------------------------------------
-sat.act <- sat.act %>% 
-  mutate(SATQ_c = SATQ - mean(SATQ),
-         SATV_c = SATV - mean(SATV))
-m2 <- lm(ACT ~ SATQ_c, sat.act)
+ds_vb_18 <- ds_vb_18 %>% 
+  mutate(binding_c = binding - mean(binding),
+         updating_c = updating - mean(updating))
+m2 <- lm(reasoning ~ binding_c, ds_vb_18)
 summary(m2)
 
 
@@ -58,15 +56,16 @@ coef(m2)
 
 
 ## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
-ggplot(sat.act, 
-       aes(x = SATQ_c, y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = binding_c, 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
 
 
 ## ------------------------------------------------------------------------
-m2b <- lm(ACT ~ scale(SATQ), sat.act)
+m2b <- lm(reasoning ~ scale(binding), ds_vb_18)
 summary(m2b)
 
 
@@ -75,20 +74,20 @@ coef(m2b)
 
 
 ## ---- fig.height=3, fig.width=4, dev='svg'-------------------------------
-ggplot(sat.act, 
-       aes(x = scale(SATQ), 
-           y = ACT)) +
+ggplot(ds_vb_18, 
+       aes(x = scale(binding), 
+           y = reasoning)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", 
               se = FALSE)
 
 
 ## ---- fig.height=5.5, fig.width=5.5, dev='svg', message=FALSE------------
-GGally::ggscatmat(sat.act[, 3:6], alpha = 0.3)
+GGally::ggscatmat(ds_vb_18[, 4:6], alpha = 0.3)
 
 
 ## ------------------------------------------------------------------------
-m3 <- lm(ACT ~ SATQ_c + SATV_c, sat.act)
+m3 <- lm(reasoning ~ binding_c + updating_c, ds_vb_18)
 summary(m3)
 
 
@@ -98,17 +97,17 @@ summary(m3)$coefficients %>% zapsmall(6)
 
 
 ## ------------------------------------------------------------------------
-## SATQ
-m3_q <- lm(SATQ_c ~ SATV_c, sat.act)
-sat.act$resid_q <- residuals(m3_q)
-summary(lm(ACT ~ 0 + resid_q, sat.act))$coefficients 
+## binding
+m3_b <- lm(binding_c ~ updating_c, ds_vb_18)
+ds_vb_18$resid_b <- residuals(m3_b)
+summary(lm(reasoning ~ 0 + resid_b, ds_vb_18))$coefficients 
 
 
 ## ------------------------------------------------------------------------
-## SATV
-m3_v <- lm(SATV_c ~ SATQ_c, sat.act)
-sat.act$resid_v <- residuals(m3_v)
-summary(lm(ACT ~ 0 + resid_v, sat.act))$coefficients 
+## updating
+m3_u <- lm(updating_c ~ binding_c, ds_vb_18)
+ds_vb_18$resid_u <- residuals(m3_u)
+summary(lm(reasoning ~ 0 + resid_u, ds_vb_18))$coefficients 
 
 
 ## ------------------------------------------------------------------------
@@ -214,38 +213,46 @@ ggplot(Prestige, aes(x = education, y = income,
 
 
 ## ---- eval=FALSE---------------------------------------------------------
-## lm(ACT ~ SATQ_c + SATV_c, sat.act)   # a
-## lm(ACT ~ SATQ_c : SATV_c, sat.act)   # b
-## lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act) # c
-## lm(ACT ~ SATQ_c*SATV_c, sat.act)     # d
-## lm(ACT ~ 0+SATQ_c*SATV_c, sat.act)   # e
+## lm(reasoning ~ binding + updating, ds_vb_18)   # a
+## lm(reasoning ~ binding : updating, ds_vb_18)   # b
+## lm(reasoning ~ 0 + binding:updating, ds_vb_18) # c
+## lm(reasoning ~ binding*updating, ds_vb_18)     # d
+## lm(reasoning ~ 0+binding*updating, ds_vb_18)   # e
+
+
+## ---- include=FALSE------------------------------------------------------
+op <- options(width = 40)
 
 
 ## ------------------------------------------------------------------------
-coef(lm(ACT ~ SATQ_c + SATV_c, sat.act))   # a
-coef(lm(ACT ~ SATQ_c : SATV_c, sat.act))   # b
-coef(lm(ACT ~ 0 + SATQ_c:SATV_c, sat.act)) # c
+coef(lm(reasoning ~ binding + updating, ds_vb_18))
+coef(lm(reasoning ~ binding : updating, ds_vb_18))
+coef(lm(reasoning ~ 0+binding:updating, ds_vb_18))
 
 
 ## ------------------------------------------------------------------------
-coef(lm(ACT ~ SATQ_c*SATV_c, sat.act))     # d
-coef(lm(ACT ~ 0+SATQ_c*SATV_c, sat.act))   # e
+coef(lm(reasoning ~ binding*updating, ds_vb_18))
+coef(lm(reasoning ~ 0+binding*updating, ds_vb_18))
+
+
+## ---- include=FALSE------------------------------------------------------
+options(op)
 
 
 ## ---- eval=FALSE, include=FALSE------------------------------------------
-## summary(lm(ACT ~ SATQ + SATV, sat.act))   # a
-## summary(lm(ACT ~ SATQ : SATV, sat.act))   # b
-## summary(lm(ACT ~ 0 + SATQ:SATV, sat.act)) # c
-## summary(lm(ACT ~ SATQ*SATV, sat.act))     # d
-## summary(lm(ACT ~ 0+SATQ*SATV, sat.act))   # e
+## summary(lm(reasoning ~ binding + updating, ds_vb_18))   # a
+## summary(lm(reasoning ~ binding : updating, ds_vb_18))   # b
+## summary(lm(reasoning ~ 0 + binding:updating, ds_vb_18)) # c
+## summary(lm(reasoning ~ binding*updating, ds_vb_18))     # d
+## summary(lm(reasoning ~ 0+binding*updating, ds_vb_18))   # e
 
 
 ## ------------------------------------------------------------------------
-str(sat.act) ## alternatively tibble::glimpse(sat.act)
+str(ds_vb_18) ## alternatively tibble::glimpse(ds_vb_18)
 
 
 ## ------------------------------------------------------------------------
-m3 <- lm(ACT ~ gender, sat.act)
+m3 <- lm(reasoning ~ order, ds_vb_18)
 summary(m3)
 
 
@@ -255,15 +262,15 @@ require(dplyr)
 
 
 ## ------------------------------------------------------------------------
-mean(sat.act$ACT)
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT))
+mean(ds_vb_18$reasoning)
+ds_vb_18 %>% group_by(order) %>%
+  summarise(m = mean(reasoning))
 
 
 ## ------------------------------------------------------------------------
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT)) %>%
-  {.$m[2] - .$m[1]}
+ds_vb_18 %>% group_by(order) %>%
+ summarise(m=mean(reasoning)) %>%
+ {.$m[2] - .$m[1]}
 
 
 ## ---- include=FALSE------------------------------------------------------
@@ -271,11 +278,15 @@ options(op)
 
 
 ## ------------------------------------------------------------------------
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 
 
 ## ------------------------------------------------------------------------
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
+
+
+## ---- warning=FALSE, message=FALSE, echo=FALSE, include=FALSE------------
+afex::set_sum_contrasts()
 
 
 ## ------------------------------------------------------------------------
@@ -283,11 +294,11 @@ afex::set_sum_contrasts()
 
 
 ## ------------------------------------------------------------------------
-model.matrix(ACT ~ gender, sat.act[1:5,])
+model.matrix(reasoning ~ order, ds_vb_18[1:5,])
 
 
 ## ------------------------------------------------------------------------
-m4 <- lm(ACT ~ gender, sat.act)
+m4 <- lm(reasoning ~ order, ds_vb_18)
 summary(m4)
 
 
@@ -296,12 +307,12 @@ op <- options(width = 40)
 
 
 ## ------------------------------------------------------------------------
-mean(sat.act$ACT)
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT))
-sat.act %>% group_by(gender) %>%
-  summarise(m = mean(ACT)) %>% 
-  summarise(mean(m))
+mean(ds_vb_18$reasoning)
+ds_vb_18 %>% group_by(order) %>%
+  summarise(m = mean(reasoning))
+ds_vb_18 %>% group_by(order) %>%
+ summarise(m=mean(reasoning)) %>% 
+ summarise(mean(m))
 
 
 
@@ -318,14 +329,14 @@ op <- options(width = 70)
 
 
 ## ------------------------------------------------------------------------
-m5 <- lm(ACT ~ gender*education, sat.act)
+m5 <- lm(reasoning ~ order*training, ds_vb_18)
 coef(m5)
 
 
 ## ------------------------------------------------------------------------
-sat.act %>% 
-  group_by(gender,education) %>%
-  summarise(mean(ACT))
+ds_vb_18 %>% 
+  group_by(order,training) %>%
+  summarise(mean(reasoning))
 
 
 ## ---- include=FALSE------------------------------------------------------
@@ -341,16 +352,16 @@ op <- options(width = 70)
 
 
 ## ------------------------------------------------------------------------
-m6 <- lm(ACT ~ gender*education, sat.act)
+m6 <- lm(reasoning ~ order*training, ds_vb_18)
 coef(m6)
 
 
 ## ------------------------------------------------------------------------
-sat.act %>% 
-  group_by(gender,education) %>%
-  summarise(m = mean(ACT)) %>% 
-  ungroup() %>% 
-  summarise(mean(m))
+ds_vb_18 %>% 
+ group_by(order,training) %>%
+ summarise(m=mean(reasoning)) %>% 
+ ungroup() %>% 
+ summarise(mean(m))
 
 
 ## ---- include=FALSE------------------------------------------------------
@@ -358,49 +369,49 @@ options(op)
 
 
 ## ---- eval=FALSE---------------------------------------------------------
-## lm(ACT ~ SATQ + SATV, sat.act)   # a: 3
-## lm(ACT ~ SATQ : SATV, sat.act)   # b: 2
-## lm(ACT ~ 0 + SATQ:SATV, sat.act) # c: 1
-## lm(ACT ~ SATQ*SATV, sat.act)     # d: 4
-## lm(ACT ~ 0+SATQ*SATV, sat.act)   # e: 3
+## reasoning ~ binding + updating   # a: 3
+## reasoning ~ binding : updating,  # b: 2
+## reasoning ~ 0 + binding:updating # c: 1
+## reasoning ~ binding*updating     # d: 4
+## reasoning ~ 0+binding*updating   # e: 3
 ## 
-## lm(ACT ~ SATQ, sat.act)          # f: 2
-## lm(ACT ~ 0 + SATQ, sat.act)      # g: 1
+## reasoning ~ binding              # f: 2
+## reasoning ~ 0 + binding          # g: 1
 
 
 ## ---- eval=FALSE---------------------------------------------------------
-## lm(ACT ~ gender, sat.act)                  # a
-## lm(ACT ~ 0+gender, sat.act)                # b
-## lm(ACT ~ gender+education, sat.act)        # c
-## lm(ACT ~ 0+gender+education, sat.act)      # d
-## lm(ACT ~ gender:education, sat.act)        # e
-## lm(ACT ~ 0+gender:education, sat.act)      # f
-## lm(ACT ~ gender*education, sat.act)        # g
-## lm(ACT ~ 0+gender*education, sat.act)      # h
-## lm(ACT ~ gender+gender:education, sat.act) # i
+## lm(reasoning ~ order, ds_vb_18)               # a
+## lm(reasoning ~ 0+order, ds_vb_18)             # b
+## lm(reasoning ~ order+training, ds_vb_18)      # c
+## lm(reasoning ~ 0+order+training, ds_vb_18)    # d
+## lm(reasoning ~ order:training, ds_vb_18)      # e
+## lm(reasoning ~ 0+order:training, ds_vb_18)    # f
+## lm(reasoning ~ order*training, ds_vb_18)      # g
+## lm(reasoning ~ 0+order*training, ds_vb_18)    # h
+## lm(reasoning ~ order+order:training, ds_vb_18)# i
 
 
 ## ------------------------------------------------------------------------
-levels(sat.act$gender)
-levels(sat.act$education)
+levels(ds_vb_18$order)
+levels(ds_vb_18$training)
 
 
 ## ------------------------------------------------------------------------
-coef(lm(ACT ~ gender, sat.act))                  # a: 2
-coef(lm(ACT ~ 0+gender, sat.act))                # b: 2
-coef(lm(ACT ~ gender+education, sat.act))        # c: 7
-coef(lm(ACT ~ 0+gender+education, sat.act))      # d: 7
+coef(lm(reasoning ~ order, ds_vb_18))                 # a: 2
+coef(lm(reasoning ~ 0+order, ds_vb_18))               # b: 2
+coef(lm(reasoning ~ order+training, ds_vb_18))        # c: 4
+coef(lm(reasoning ~ 0+order+training, ds_vb_18))      # d: 4
 
 
 ## ------------------------------------------------------------------------
-coef(lm(ACT ~ gender:education, sat.act))        # e: 13
-coef(lm(ACT ~ 0+gender:education, sat.act))      # f: 12
+coef(lm(reasoning ~ order:training, ds_vb_18))        # e: 7
+coef(lm(reasoning ~ 0+order:training, ds_vb_18))      # f: 6
 
 
 ## ---- eval = FALSE-------------------------------------------------------
-## coef(lm(ACT ~ gender*education, sat.act))        # g: 12
-## coef(lm(ACT ~ 0+gender*education, sat.act))      # h: 12
-## coef(lm(ACT ~ gender+gender:education, sat.act)) # i: 12
+## coef(lm(reasoning ~ order*training, ds_vb_18))        # g: 6
+## coef(lm(reasoning ~ 0+order*training, ds_vb_18))      # h: 6
+## coef(lm(reasoning ~ order+order:training, ds_vb_18))  # i: 6
 
 
 ## ---- include=FALSE------------------------------------------------------
@@ -409,16 +420,16 @@ op <- options(width = 70)
 
 ## ---- message=FALSE------------------------------------------------------
 afex::set_sum_contrasts()
-m6 <- lm(ACT ~ gender*education, sat.act)
+m6 <- lm(reasoning ~ order*training, ds_vb_18)
 summary(m6)
 
 
 ## ------------------------------------------------------------------------
-sat.act %>% 
-  group_by(gender, education) %>%
-  summarise(m = mean(ACT)) %>% 
-  ungroup() %>% 
-  summarise(mean(m))
+ds_vb_18 %>% 
+ group_by(order, training) %>%
+ summarise(m=mean(reasoning)) %>% 
+ ungroup() %>% 
+ summarise(mean(m))
 
 
 ## ---- include=FALSE------------------------------------------------------
@@ -432,7 +443,7 @@ Anova(m6, type = 3)
 
 ## ---- message=FALSE, warning=FALSE---------------------------------------
 library("emmeans")    
-(emms <- emmeans(m6, ~education))
+(emms <- emmeans(m6, "training"))
 
 
 ## ---- message=FALSE------------------------------------------------------
@@ -441,36 +452,36 @@ pairs(emms, adjust='holm')
 
 ## ---- message=FALSE, warning=FALSE---------------------------------------
 library("emmeans")  
-(emms <- emmeans(m6, "education")) 
+(emms <- emmeans(m6, "training")) 
 
 
 ## ---- message=FALSE------------------------------------------------------
 cs <- list(
-  "12-45" = c(0, -0.5, -0.5, 0, 0.5, 0.5),
-  "0-3" = c(-1, 0, 0, 1, 0, 0),
-  "all-last" = c(-rep(0.2, 5), 1)
+  "c-u" = c(1, -1, 0),
+  "c-wm" = c(1, -0.5, -0.5),
+  "c-uub" = c(1, -0.75, -0.25)
 )
 contrast(emms, cs, adjust = "holm")
 
 
 ## ---- message=FALSE, comment='#'-----------------------------------------
 library("afex")
-sat.act$id <- factor(1:nrow(sat.act))
-(a1 <- aov_car(ACT ~ gender+Error(id), sat.act))
+(a1 <- aov_car(reasoning ~ order + Error(code), 
+               ds_vb_18))
 
 
 ## ------------------------------------------------------------------------
-(a2 <- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 <- aov_car(reasoning ~ order*training + 
+                 Error(code), ds_vb_18))
 
 
 ## ------------------------------------------------------------------------
-(a2 <- aov_car(ACT ~ gender*education+Error(id), 
-               sat.act))
+(a2 <- aov_car(reasoning ~ order*training +
+                 Error(code), ds_vb_18))
 
 
 ## ---- fig.width=4.5, fig.height=4.5, dev='svg'---------------------------
-afex_plot(a2, "education", "gender",
+afex_plot(a2, "training", "order",
           data_geom = geom_violin, 
           data_arg = list(width = 0.4)) +
   theme(legend.position = "bottom")
@@ -478,11 +489,12 @@ afex_plot(a2, "education", "gender",
 
 
 ## ------------------------------------------------------------------------
-emmeans(a2, "gender")
+emmeans(a2, "order")
 
 
 ## ------------------------------------------------------------------------
-emmeans(a2, c("education")) %>% pairs
+
+emmeans(a2, c("training")) %>% pairs
 
 
 ## ------------------------------------------------------------------------
@@ -503,7 +515,7 @@ Machines %>% group_by(Machine) %>%
 ## ---- fig.height=4, dev='svg'--------------------------------------------
 ggplot(Machines, aes(x = Machine, y = score)) +
   geom_point() + 
-  facet_wrap(~ Worker) + 
+  facet_wrap("Worker") + 
   theme_light()
 
 
@@ -545,11 +557,11 @@ a1
 
 
 ## ------------------------------------------------------------------------
-pairs(emmeans(a1, "Machine"), 
-      adjust = "holm")
+emmeans(a1, "Machine", adjust = "holm") %>% 
+  pairs
 
 
 ## ------------------------------------------------------------------------
-pairs(emmeans(mmach, "Machine"), 
-      adjust = "holm")  ## complete pooling results
+emmeans(mmach, "Machine", adjust = "holm") %>% 
+  pairs ## complete pooling results
 
