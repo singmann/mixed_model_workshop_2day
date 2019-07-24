@@ -1213,7 +1213,7 @@ class: small
 ### Partial Pooling
 - 1 set of group-level parameters ${\hat \Theta}$ and 1 set of parameters $\Theta_i$ for each individual data set ${\bf n_i}$
 - Likelihood: $\sum_{i = 1}^N ln(L({\bf n_i} \mid \Theta_i, {\hat \Theta})) + ln(L(\Theta_i \mid {\hat \Theta}))$
-- Requires distributional assumption for group-level parameters (e.g., individual-level data normally distributed around group-level parameters)
+- Requires distributional assumption for group-level parameters (e.g., individual-level parameters normally distributed around group-level parameters)
 - Provides on average better estimates for both individual-level and group-level parameters (e.g., [Stein's paradox](https://en.wikipedia.org/wiki/Stein%27s_example))
 - Estimation can be difficult in a frequentist setting (alternatives: penalized or restricted maximum likelihood estimation or Bayesian estimation)
 
@@ -1351,7 +1351,7 @@ emmeans(mmach, "Machine", adjust = "holm") %>%
 ---
 class: small
 
-# Example Data 2 (Exercise)
+# Example Data 2 (Exercise 1.3)
 
 ![](cognition_cutout.png)
 
@@ -1386,7 +1386,7 @@ class: small, inline-grey
 
 --
 
-- Exercise 1: Analyse the data using the no-pooling approach: `exercises/exercise_1_P.Rmd`
+- Exercise 1.3: Analyse the data using the no-pooling approach: `exercises/exercise_1.3_P.Rmd`
 - Calculate regression between *P*(if *A* then *B*) and *P*(*B*|*A*) separately for each participant.
 - Do results suggest an overall relationship between the two variables? If so, how strong?
 
