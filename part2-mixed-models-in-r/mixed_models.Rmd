@@ -302,11 +302,16 @@ ggplot(data = dat2, aes(x = B_given_A_c, y = if_A_then_B_c)) +
 
 *Fixed-effects parameters*: Overall effect of specific model term on dependent variable
 
+--
+
+
+
 *Random-effects parameters*: 
 - zero-centered offsets/displacements for each level of random-effects grouping factor
 - added to specific fixed-effects parameter
 - assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding over-fitting
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
+
 
 ```{r, echo=FALSE, dpi=300, fig.width=3.5, fig.height=4, warning=FALSE , out.width='25%'}
 rnd_coefs <- as_tibble(coef(m_tmp)$p_id)
@@ -797,6 +802,10 @@ class: small
 
 `lme4::lmer` does not include *p*-values.
 
+
+
+--
+
 `afex::mixed` provides four different methods:
 1. Kenward-Roger (`method="KR"`, default): Provides best-protection against anti-conservative results, requires a lot of RAM for complicated random-effects structures.
 2. Satterthwaite (`method="S"`): Similar to KR, but requires less RAM.
@@ -819,6 +828,8 @@ class:small
 # Specifying Random-Effects Structure
 
 - Omitting random-effects parameters for model terms which vary within the levels of a random-effects grouping factor and for which random variability exists leads to non-iid residuals (i.e., $\epsilon$) and potentially anti-conservative results (e.g., Barr, Levy, Scheepers, & Tily, 2013).
+--
+
 - Safeguard is **maximal model justified by the design** (Barr et al., 2013).
     - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
     - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
@@ -835,7 +846,7 @@ class:small
 
 ---
 
-### High-Level Overview
+# High-Level Overview
 
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
@@ -913,10 +924,15 @@ ggplot(dat2, aes(y = if_A_then_B_c, x = B_given_A_c)) +
 library("afex")
 ma_1 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_id) + 
                 (B_given_A_c*rel_cond|i_id), dat2, method = "S") 
+```
 
+--
+
+```{r}
 ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
                 (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 ```
+
 
 ---
 
@@ -924,7 +940,11 @@ ma_2 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id
 
 ```{r}
 summary(ma_2)$varcor
+```
 
+--
+
+```{r}
 ma_3 <- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
                 (B_given_A_c+rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
 ```
@@ -939,6 +959,11 @@ ma_3 ## or: nice(ma_3)
 ```
 
 - Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
+
+--
+
+- `summary()` returns `lme4` summary.
+- Other `lme4` methods can be used via accessing `model$full_model`. E.g.: `fixed(model$full_model)`
 
 ---
 class: small
@@ -958,6 +983,12 @@ summary(ma_3)$varcor
 
 ```{r}
 summary(ma_3)$coefficients %>% zapsmall
+```
+
+--
+
+```{r}
+fixef(ma_3$full_model)
 ```
 
 

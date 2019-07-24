@@ -308,11 +308,16 @@ Each `\(S_i\)` idiosyncratic intercept &amp; slope: `lmer(if_A_then_B_c ~ B_give
 
 *Fixed-effects parameters*: Overall effect of specific model term on dependent variable
 
+--
+
+
+
 *Random-effects parameters*: 
 - zero-centered offsets/displacements for each level of random-effects grouping factor
 - added to specific fixed-effects parameter
 - assumed to follow normal distribution which provides hierarchical shrinkage, thereby avoiding over-fitting
 - should be added to each parameter that varies within the levels of a random-effects grouping factor (i.e., factor is *crossed* with random-effects grouping factor)
+
 
 &lt;img src="mixed_models_files/figure-html/unnamed-chunk-8-1.png" width="25%" /&gt;
 
@@ -770,6 +775,10 @@ class: small
 
 `lme4::lmer` does not include *p*-values.
 
+
+
+--
+
 `afex::mixed` provides four different methods:
 1. Kenward-Roger (`method="KR"`, default): Provides best-protection against anti-conservative results, requires a lot of RAM for complicated random-effects structures.
 2. Satterthwaite (`method="S"`): Similar to KR, but requires less RAM.
@@ -793,6 +802,8 @@ class:small
 # Specifying Random-Effects Structure
 
 - Omitting random-effects parameters for model terms which vary within the levels of a random-effects grouping factor and for which random variability exists leads to non-iid residuals (i.e., `\(\epsilon\)`) and potentially anti-conservative results (e.g., Barr, Levy, Scheepers, &amp; Tily, 2013).
+--
+
 - Safeguard is **maximal model justified by the design** (Barr et al., 2013).
     - Which factors/terms vary within levels of (i.e. are crossed with) each random-effects grouping factor? 
     - Are there replicates within factor levels (or parameters/coefficients) for levels of random-effects grouping factor?
@@ -809,7 +820,7 @@ class:small
 
 ---
 
-### High-Level Overview
+# High-Level Overview
 
 Steps for running a mixed model analysis:
 1. Identify desired fixed-effects structure
@@ -907,6 +918,9 @@ ma_1 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond|p_
 ## Calculating p-values. [DONE]
 ```
 
+--
+
+
 ```r
 ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
                 (B_given_A_c*rel_cond||i_id), dat2, method = "S", expand_re = TRUE) 
@@ -930,6 +944,7 @@ ma_2 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p
 ## Calculating p-values. [DONE]
 ```
 
+
 ---
 
 ## Using `afex` II
@@ -951,6 +966,9 @@ summary(ma_2)$varcor
 ##  i_id.3   re2.B_given_A_c_by_rel_cond1 0.0000  
 ##  Residual                              0.1664
 ```
+
+--
+
 
 ```r
 ma_3 &lt;- mixed(if_A_then_B_c ~ B_given_A_c*rel_cond + (B_given_A_c*rel_cond||p_id) + 
@@ -992,6 +1010,11 @@ ma_3 ## or: nice(ma_3)
 ```
 
 - Usually one is interested in tests of fixed effects. `afex` `print()` (or `nice()`) method presents convenient ANOVA table.
+
+--
+
+- `summary()` returns `lme4` summary.
+- Other `lme4` methods can be used via accessing `model$full_model`. E.g.: `fixed(model$full_model)`
 
 ---
 class: small
@@ -1075,6 +1098,18 @@ summary(ma_3)$coefficients %&gt;% zapsmall
 ## B_given_A_c               0.61       0.04 18.74   17.25        0
 ## rel_cond1                 0.15       0.01 23.46   10.73        0
 ## B_given_A_c:rel_cond1     0.18       0.03 86.54    6.19        0
+```
+
+--
+
+
+```r
+fixef(ma_3$full_model)
+```
+
+```
+##           (Intercept)           B_given_A_c             rel_cond1 B_given_A_c:rel_cond1 
+##              -0.07283               0.60542               0.14979               0.18205
 ```
 
 
@@ -1161,7 +1196,7 @@ p2 &lt;- afex_plot(ma_3, "rel_cond",
 p2
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-39-1.svg)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-42-1.svg)&lt;!-- --&gt;
 
 ]
 
@@ -1253,7 +1288,7 @@ Research question: Do the machines differ in their score?
 
 .pull-left[
 
-![](mixed_models_files/figure-html/unnamed-chunk-45-1.svg)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-48-1.svg)&lt;!-- --&gt;
 
 ]
 
@@ -1575,7 +1610,7 @@ ggplot(dat2, aes(sample = residuals)) +
   theme(text=element_text(size=18))
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-58-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-61-1.png)&lt;!-- --&gt;
 ]
 
 
@@ -1589,7 +1624,7 @@ ggplot(dat2, aes(sample = residuals)) +
     - Inference agrees with visual impression
 
 
-![](mixed_models_files/figure-html/unnamed-chunk-59-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-62-1.png)&lt;!-- --&gt;
 
 ]
 
@@ -1701,7 +1736,7 @@ plot(m_max,
      resid(.,scaled=TRUE) ~ B_given_A | rel_cond)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-61-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-64-1.png)&lt;!-- --&gt;
 ]
 
 .pull-right[
@@ -1710,7 +1745,7 @@ plot(m_max,
 lattice::qqmath(m_max)
 ```
 
-![](mixed_models_files/figure-html/unnamed-chunk-62-1.png)&lt;!-- --&gt;
+![](mixed_models_files/figure-html/unnamed-chunk-65-1.png)&lt;!-- --&gt;
 
 ]
 
