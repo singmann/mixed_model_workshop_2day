@@ -1,2 +1,1 @@
-- add mixed model steps to handout.
 - Use de Simoni & von Bastian data in part 2 (not trivial, given that interesting correlation is across participants)
