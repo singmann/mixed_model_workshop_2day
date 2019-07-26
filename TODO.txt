@@ -1,3 +1,4 @@
 - Use de Simoni & von Bastian data in part 2 (not trivial, given that interesting correlation is across participants)
 - Replace do(tidy()) in partial pooling exercise 1.3 and 2.2
 - Go through solutions of exercises (mixed model specifically). At some point I have used data, where it should be parameters.
+- Add slide on power in practical section.
